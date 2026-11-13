@@ -48,6 +48,7 @@ Not implemented yet:
 - `/rendercore stats` displays the available client tick and lighting diagnostics. These are measurements, not FPS or GPU readings.
 - `/rendercore culling on` enables entity-distance culling and saves the setting.
 - `/rendercore culling off` disables entity-distance culling and saves the setting.
+- `/rendercore distance players 128` changes the selected category's render distance in blocks. Categories: `players`, `hostile`, `passive`, `villagers`, `items`, `projectiles`, `orbs`, `armorstands`. Values are clamped to safe supported ranges and saved automatically.
 
 ## Build
 
