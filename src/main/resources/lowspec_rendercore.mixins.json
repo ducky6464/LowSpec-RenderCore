@@ -5,7 +5,8 @@
   "client": [
     "LightingProviderMixin",
     "EntityRenderManagerMixin",
-    "GameRendererMetricsMixin"
+    "GameRendererMetricsMixin",
+    "ParticleManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
