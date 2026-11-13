@@ -39,6 +39,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "LowSpec RenderCore | Average client tick: "
                                             + String.format(java.util.Locale.ROOT, "%.2f ms", getAverageClientTickMillis())
                                             + " | Samples: " + getMeasuredTicks()));
+                            RenderFrameMetrics.Snapshot frame = RenderFrameMetrics.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "CPU render time: "
+                                            + String.format(java.util.Locale.ROOT, "%.2f ms avg / %.2f ms p95",
+                                                    frame.averageRenderMillis(), frame.p95RenderMillis())
+                                            + " | Samples: " + frame.samples()));
                             context.getSource().sendFeedback(Text.literal(
                                     "Lighting calls: " + light.calls()
                                             + " | Average call: "
