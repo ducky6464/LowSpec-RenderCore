@@ -15,7 +15,7 @@ Implemented:
 - Independent distance values for each supported entity category.
 - GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
 
-Entity culling is **off by default**. To enable it, edit `.minecraft/config/lowspec-rendercore.properties` while the game is closed:
+Entity culling is **on by default** in fresh installations. The mod creates `.minecraft/config/lowspec-rendercore.properties` automatically. No manual setup is needed. The defaults are:
 
 ```properties
 render.entity_distance_culling=true
