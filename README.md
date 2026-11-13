@@ -11,20 +11,35 @@ Implemented:
 - Persistent, player-owned configuration.
 - Basic average client tick-time measurement.
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
-- GitHub Actions workflow intended to compile the mod and publish the JAR as a workflow artifact.
+- Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, and dropped items.
+- Independent distance values for each supported entity category.
+- GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
+
+Entity culling is **off by default**. To enable it, edit `.minecraft/config/lowspec-rendercore.properties` while the game is closed:
+
+```properties
+render.entity_distance_culling=true
+render.players=128
+render.hostile_mobs=96
+render.passive_mobs=96
+render.villagers=64
+render.dropped_items=48
+```
+
+Distances are in blocks. This only prevents selected entities from being drawn beyond the chosen distance. It does not remove entities, change server simulation, or stop entity AI. The local player and active camera entity are preserved. Unknown entity categories retain vanilla rendering behavior.
 
 The lighting instrumentation only measures vanilla work. It does not alter light propagation, skip updates, or claim a lighting speedup. Metrics are exposed in code for the upcoming diagnostics display.
 
 Not implemented yet:
-- Lighting scheduling or propagation optimization.
+- Actual lighting scheduling or propagation optimization.
 - Chunk mesh/rebuild optimization.
-- Entity render-distance controls wired into rendering.
 - In-game configuration screen or HUD.
-- Verified successful build and in-game compatibility testing.
+- Frame-time percentiles and GPU metrics.
+- In-game compatibility and performance testing across hardware.
 
 ## Build
 
-Requires Java 21 and Gradle 9.2.1. Run `gradle build`, or use the GitHub Actions workflow. A successful workflow uploads the JAR as an artifact.
+Requires Java 21. Run `gradle build`, or use the GitHub Actions workflow. A successful workflow uploads the JAR as an artifact.
 
 ## Engineering rules
 
@@ -38,5 +53,5 @@ Requires Java 21 and Gradle 9.2.1. Run `gradle build`, or use the GitHub Actions
 1. **Foundation and instrumentation:** project setup, config model, client tick timing, lighting timing.
 2. **Lighting optimization:** use measurements to identify bottlenecks, then test safe scheduling improvements against correctness tests.
 3. **Chunk renderer:** investigate rebuild scheduling, mesh generation, face/occlusion culling, and draw-call costs.
-4. **Entity distance:** add independent, manually controlled distances by entity category.
+4. **Entity distance:** expand categories and validate behavior in-game.
 5. **UI and benchmarks:** settings screen, diagnostics overlay, frame-time percentiles, and reproducible tests.
