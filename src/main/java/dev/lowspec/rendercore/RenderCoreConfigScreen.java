@@ -64,6 +64,17 @@ public final class RenderCoreConfigScreen extends Screen {
             button.setMessage(chunkText());
         }).dimensions(center + 5, toggleY + 25, 140, 20).build());
 
+        int particleY = toggleY + 50;
+        addDrawableChild(ButtonWidget.builder(particleText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.particleBudgetEnabled = !LowSpecRenderCoreClient.CONFIG.particleBudgetEnabled;
+            saveConfig();
+            button.setMessage(particleText());
+        }).dimensions(center - 145, particleY, 140, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustParticleBudget(-50))
+                .dimensions(center + 5, particleY, 28, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustParticleBudget(50))
+                .dimensions(center + 112, particleY, 28, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 30, 200, 20).build());
     }
@@ -82,6 +93,9 @@ public final class RenderCoreConfigScreen extends Screen {
             context.drawCenteredTextWithShadow(textRenderer,
                     Text.literal(Integer.toString(getDistance(i))), center + 91, y, 0xE0E0E0);
         }
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal("Particle budget: " + LowSpecRenderCoreClient.CONFIG.maxParticlesPerTick + " admissions / tick"),
+                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 64, 0xE0E0E0);
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -120,6 +134,16 @@ public final class RenderCoreConfigScreen extends Screen {
             case 6 -> c.experienceOrbRenderDistance = value;
             default -> c.armorStandRenderDistance = value;
         }
+    }
+
+    private void adjustParticleBudget(int amount) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        c.maxParticlesPerTick = Math.max(50, Math.min(2000, c.maxParticlesPerTick + amount));
+        saveConfig();
+    }
+
+    private Text particleText() {
+        return Text.literal("Particle limit: " + (LowSpecRenderCoreClient.CONFIG.particleBudgetEnabled ? "ON" : "OFF"));
     }
 
     private Text cullingText() {
