@@ -16,6 +16,8 @@ public final class RenderCoreConfig {
     public boolean entityDistanceCullingEnabled = true;
     public boolean particleBudgetEnabled = true;
     public int maxParticlesPerTick = 400;
+    public boolean blockEntityDistanceCullingEnabled = true;
+    public int blockEntityRenderDistance = 96;
     public int playerRenderDistance = 128;
     public int hostileMobRenderDistance = 96;
     public int passiveMobRenderDistance = 96;
@@ -41,6 +43,8 @@ public final class RenderCoreConfig {
             config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "true"));
             config.particleBudgetEnabled = Boolean.parseBoolean(p.getProperty("particles.budget_enabled", "true"));
             config.maxParticlesPerTick = bounded(p.getProperty("particles.max_per_tick", "400"), 400, 50, 2000);
+            config.blockEntityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.block_entity_culling", "true"));
+            config.blockEntityRenderDistance = bounded(p.getProperty("render.block_entities", "96"), 96, 16, 256);
             config.playerRenderDistance = bounded(p.getProperty("render.players", "128"), 128, 16, 512);
             config.hostileMobRenderDistance = bounded(p.getProperty("render.hostile_mobs", "96"), 96, 16, 256);
             config.passiveMobRenderDistance = bounded(p.getProperty("render.passive_mobs", "96"), 96, 16, 256);
@@ -62,6 +66,8 @@ public final class RenderCoreConfig {
         p.setProperty("render.entity_distance_culling", Boolean.toString(entityDistanceCullingEnabled));
         p.setProperty("particles.budget_enabled", Boolean.toString(particleBudgetEnabled));
         p.setProperty("particles.max_per_tick", Integer.toString(maxParticlesPerTick));
+        p.setProperty("render.block_entity_culling", Boolean.toString(blockEntityDistanceCullingEnabled));
+        p.setProperty("render.block_entities", Integer.toString(blockEntityRenderDistance));
         p.setProperty("render.players", Integer.toString(playerRenderDistance));
         p.setProperty("render.hostile_mobs", Integer.toString(hostileMobRenderDistance));
         p.setProperty("render.passive_mobs", Integer.toString(passiveMobRenderDistance));
