@@ -9,10 +9,12 @@ A standalone, client-side Fabric optimization project for Minecraft 1.21.11. It 
 Implemented:
 - Fabric Loom project targeting Minecraft 1.21.11 and Java 21.
 - Persistent, player-owned configuration.
+- Optional Mod Menu 17.0.1 integration for Minecraft 1.21.11, with a graphical settings screen. Mod Menu remains optional; the mod does not force it as a dependency.
 - Basic average client tick-time measurement.
 - In-game `/rendercore stats` command showing measured tick, CPU-side render duration average/p95, and lighting timings.
 - Rolling 120-sample CPU-side `GameRenderer.render()` timing; explicitly not presented as GPU or display-present time.
 - In-game `/rendercore culling on` and `/rendercore culling off` commands that save the setting automatically.
+- Graphical settings screen accessible from the LowSpec RenderCore config button in Mod Menu, including entity distance +/- controls and diagnostics toggles.
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Independent distance values for each supported entity category.
@@ -39,9 +41,13 @@ The lighting instrumentation only measures vanilla work. It does not alter light
 Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
 - Chunk mesh/rebuild optimization.
-- In-game configuration screen or HUD.
+- Dedicated always-visible performance HUD.
 - GPU time, display-present frame time, and GPU metrics.
 - In-game compatibility and performance testing across hardware.
+
+## Mod Menu settings screen
+
+Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for LowSpec RenderCore in the Mods list. The screen lets you adjust all eight entity distance categories and toggle entity culling, general diagnostics, lighting timing, and chunk diagnostics. Changes save automatically. Mod Menu is optional; command controls remain available without it.
 
 ## In-game commands
 
