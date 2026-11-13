@@ -75,6 +75,17 @@ public final class RenderCoreConfigScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustParticleBudget(50))
                 .dimensions(center + 112, particleY, 28, 20).build());
 
+        int blockEntityY = particleY + 25;
+        addDrawableChild(ButtonWidget.builder(blockEntityText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.blockEntityDistanceCullingEnabled = !LowSpecRenderCoreClient.CONFIG.blockEntityDistanceCullingEnabled;
+            saveConfig();
+            button.setMessage(blockEntityText());
+        }).dimensions(center - 145, blockEntityY, 140, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustBlockEntityDistance(-16))
+                .dimensions(center + 5, blockEntityY, 28, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustBlockEntityDistance(16))
+                .dimensions(center + 112, blockEntityY, 28, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 30, 200, 20).build());
     }
@@ -96,6 +107,9 @@ public final class RenderCoreConfigScreen extends Screen {
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("Particle budget: " + LowSpecRenderCoreClient.CONFIG.maxParticlesPerTick + " admissions / tick"),
                 width / 2 + 55, rowStart + CATEGORIES.length * 25 + 64, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal("Block entity distance: " + LowSpecRenderCoreClient.CONFIG.blockEntityRenderDistance + " blocks"),
+                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 89, 0xE0E0E0);
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -134,6 +148,16 @@ public final class RenderCoreConfigScreen extends Screen {
             case 6 -> c.experienceOrbRenderDistance = value;
             default -> c.armorStandRenderDistance = value;
         }
+    }
+
+    private void adjustBlockEntityDistance(int amount) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        c.blockEntityRenderDistance = Math.max(16, Math.min(256, c.blockEntityRenderDistance + amount));
+        saveConfig();
+    }
+
+    private Text blockEntityText() {
+        return Text.literal("Block entity culling: " + (LowSpecRenderCoreClient.CONFIG.blockEntityDistanceCullingEnabled ? "ON" : "OFF"));
     }
 
     private void adjustParticleBudget(int amount) {
