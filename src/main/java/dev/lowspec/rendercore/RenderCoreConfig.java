@@ -13,9 +13,11 @@ public final class RenderCoreConfig {
     public boolean diagnosticsEnabled = true;
     public boolean lightingDiagnosticsEnabled = true;
     public boolean chunkDiagnosticsEnabled = true;
+    public boolean entityDistanceCullingEnabled = false;
     public int playerRenderDistance = 128;
     public int hostileMobRenderDistance = 96;
     public int passiveMobRenderDistance = 96;
+    public int villagerRenderDistance = 64;
     public int droppedItemRenderDistance = 48;
 
     public static RenderCoreConfig load(Path configDir) {
@@ -28,9 +30,11 @@ public final class RenderCoreConfig {
             config.diagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.enabled", "true"));
             config.lightingDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.lighting", "true"));
             config.chunkDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.chunks", "true"));
+            config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "false"));
             config.playerRenderDistance = bounded(p.getProperty("render.players", "128"), 128, 16, 512);
             config.hostileMobRenderDistance = bounded(p.getProperty("render.hostile_mobs", "96"), 96, 16, 256);
             config.passiveMobRenderDistance = bounded(p.getProperty("render.passive_mobs", "96"), 96, 16, 256);
+            config.villagerRenderDistance = bounded(p.getProperty("render.villagers", "64"), 64, 16, 256);
             config.droppedItemRenderDistance = bounded(p.getProperty("render.dropped_items", "48"), 48, 8, 128);
         } catch (IOException ignored) { }
         return config;
@@ -42,9 +46,11 @@ public final class RenderCoreConfig {
         p.setProperty("diagnostics.enabled", Boolean.toString(diagnosticsEnabled));
         p.setProperty("diagnostics.lighting", Boolean.toString(lightingDiagnosticsEnabled));
         p.setProperty("diagnostics.chunks", Boolean.toString(chunkDiagnosticsEnabled));
+        p.setProperty("render.entity_distance_culling", Boolean.toString(entityDistanceCullingEnabled));
         p.setProperty("render.players", Integer.toString(playerRenderDistance));
         p.setProperty("render.hostile_mobs", Integer.toString(hostileMobRenderDistance));
         p.setProperty("render.passive_mobs", Integer.toString(passiveMobRenderDistance));
+        p.setProperty("render.villagers", Integer.toString(villagerRenderDistance));
         p.setProperty("render.dropped_items", Integer.toString(droppedItemRenderDistance));
         try (OutputStream out = Files.newOutputStream(configDir.resolve(FILE_NAME))) {
             p.store(out, "LowSpec RenderCore settings. Values are controlled by the player.");
