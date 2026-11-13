@@ -13,7 +13,7 @@ public final class RenderCoreConfig {
     public boolean diagnosticsEnabled = true;
     public boolean lightingDiagnosticsEnabled = true;
     public boolean chunkDiagnosticsEnabled = true;
-    public boolean entityDistanceCullingEnabled = false;
+    public boolean entityDistanceCullingEnabled = true;
     public int playerRenderDistance = 128;
     public int hostileMobRenderDistance = 96;
     public int passiveMobRenderDistance = 96;
@@ -36,7 +36,7 @@ public final class RenderCoreConfig {
             config.diagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.enabled", "true"));
             config.lightingDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.lighting", "true"));
             config.chunkDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.chunks", "true"));
-            config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "false"));
+            config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "true"));
             config.playerRenderDistance = bounded(p.getProperty("render.players", "128"), 128, 16, 512);
             config.hostileMobRenderDistance = bounded(p.getProperty("render.hostile_mobs", "96"), 96, 16, 256);
             config.passiveMobRenderDistance = bounded(p.getProperty("render.passive_mobs", "96"), 96, 16, 256);
