@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "lowspec_rendercore",
+  "version": "${version}",
+  "name": "LowSpec RenderCore",
+  "description": "A player-controlled performance and diagnostics mod focused on low-spec Minecraft systems.",
+  "authors": ["LowSpec RenderCore contributors"],
+  "license": "MIT",
+  "environment": "client",
+  "entrypoints": { "client": ["dev.lowspec.rendercore.LowSpecRenderCoreClient"] },
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
