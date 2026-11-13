@@ -2,6 +2,9 @@
   "required": true,
   "package": "dev.lowspec.rendercore.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["LightingProviderMixin"],
+  "client": [
+    "LightingProviderMixin",
+    "EntityRenderManagerMixin"
+  ],
   "injectors": { "defaultRequire": 1 }
 }
