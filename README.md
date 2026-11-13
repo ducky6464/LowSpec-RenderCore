@@ -11,7 +11,7 @@ Implemented:
 - Persistent, player-owned configuration.
 - Basic average client tick-time measurement.
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
-- Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, and dropped items.
+- Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Independent distance values for each supported entity category.
 - GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
 
@@ -24,9 +24,12 @@ render.hostile_mobs=96
 render.passive_mobs=96
 render.villagers=64
 render.dropped_items=48
+render.projectiles=48
+render.experience_orbs=32
+render.armor_stands=64
 ```
 
-Distances are in blocks. This only prevents selected entities from being drawn beyond the chosen distance. It does not remove entities, change server simulation, or stop entity AI. The local player and active camera entity are preserved. Unknown entity categories retain vanilla rendering behavior.
+The config file is generated automatically on first launch. Distances are in blocks. This only prevents selected entities from being drawn beyond the chosen distance. It does not remove entities, change server simulation, or stop entity AI. The local player and active camera entity are preserved. Unknown entity categories retain vanilla rendering behavior.
 
 The lighting instrumentation only measures vanilla work. It does not alter light propagation, skip updates, or claim a lighting speedup. Metrics are exposed in code for the upcoming diagnostics display.
 
