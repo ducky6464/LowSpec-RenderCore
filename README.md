@@ -10,7 +10,8 @@ Implemented:
 - Fabric Loom project targeting Minecraft 1.21.11 and Java 21.
 - Persistent, player-owned configuration.
 - Basic average client tick-time measurement.
-- In-game `/rendercore stats` command showing measured tick and lighting timings.
+- In-game `/rendercore stats` command showing measured tick, CPU-side render duration average/p95, and lighting timings.
+- Rolling 120-sample CPU-side `GameRenderer.render()` timing; explicitly not presented as GPU or display-present time.
 - In-game `/rendercore culling on` and `/rendercore culling off` commands that save the setting automatically.
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
@@ -39,7 +40,7 @@ Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
 - Chunk mesh/rebuild optimization.
 - In-game configuration screen or HUD.
-- Frame-time percentiles and GPU metrics.
+- GPU time, display-present frame time, and GPU metrics.
 - In-game compatibility and performance testing across hardware.
 
 ## In-game commands
