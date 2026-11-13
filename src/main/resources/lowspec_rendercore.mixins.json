@@ -4,7 +4,10 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "LightingProviderMixin",
-    "EntityRenderManagerMixin"
+    "EntityRenderManagerMixin",
+    "GameRendererMetricsMixin"
   ],
-  "injectors": { "defaultRequire": 1 }
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
