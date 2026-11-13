@@ -6,7 +6,8 @@
     "LightingProviderMixin",
     "EntityRenderManagerMixin",
     "GameRendererMetricsMixin",
-    "ParticleManagerMixin"
+    "ParticleManagerMixin",
+    "BlockEntityRenderManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
