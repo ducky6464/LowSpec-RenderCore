@@ -19,11 +19,17 @@ public final class RenderCoreConfig {
     public int passiveMobRenderDistance = 96;
     public int villagerRenderDistance = 64;
     public int droppedItemRenderDistance = 48;
+    public int projectileRenderDistance = 48;
+    public int experienceOrbRenderDistance = 32;
+    public int armorStandRenderDistance = 64;
 
     public static RenderCoreConfig load(Path configDir) {
         RenderCoreConfig config = new RenderCoreConfig();
         Path file = configDir.resolve(FILE_NAME);
-        if (!Files.isRegularFile(file)) return config;
+        if (!Files.isRegularFile(file)) {
+            try { config.save(configDir); } catch (IOException ignored) { }
+            return config;
+        }
         Properties p = new Properties();
         try (InputStream in = Files.newInputStream(file)) {
             p.load(in);
@@ -36,6 +42,9 @@ public final class RenderCoreConfig {
             config.passiveMobRenderDistance = bounded(p.getProperty("render.passive_mobs", "96"), 96, 16, 256);
             config.villagerRenderDistance = bounded(p.getProperty("render.villagers", "64"), 64, 16, 256);
             config.droppedItemRenderDistance = bounded(p.getProperty("render.dropped_items", "48"), 48, 8, 128);
+            config.projectileRenderDistance = bounded(p.getProperty("render.projectiles", "48"), 48, 8, 128);
+            config.experienceOrbRenderDistance = bounded(p.getProperty("render.experience_orbs", "32"), 32, 8, 128);
+            config.armorStandRenderDistance = bounded(p.getProperty("render.armor_stands", "64"), 64, 8, 128);
         } catch (IOException ignored) { }
         return config;
     }
@@ -52,6 +61,9 @@ public final class RenderCoreConfig {
         p.setProperty("render.passive_mobs", Integer.toString(passiveMobRenderDistance));
         p.setProperty("render.villagers", Integer.toString(villagerRenderDistance));
         p.setProperty("render.dropped_items", Integer.toString(droppedItemRenderDistance));
+        p.setProperty("render.projectiles", Integer.toString(projectileRenderDistance));
+        p.setProperty("render.experience_orbs", Integer.toString(experienceOrbRenderDistance));
+        p.setProperty("render.armor_stands", Integer.toString(armorStandRenderDistance));
         try (OutputStream out = Files.newOutputStream(configDir.resolve(FILE_NAME))) {
             p.store(out, "LowSpec RenderCore settings. Values are controlled by the player.");
         }
