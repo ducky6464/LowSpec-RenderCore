@@ -27,6 +27,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
         ClientTickEvents.START_CLIENT_TICK.register(client -> tickStartNanos = System.nanoTime());
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            ParticleBudget.resetForNewTick();
             if (!CONFIG.diagnosticsEnabled || tickStartNanos == 0L) return;
             double elapsedMs = (System.nanoTime() - tickStartNanos) / 1_000_000.0;
             measuredTicks++;
