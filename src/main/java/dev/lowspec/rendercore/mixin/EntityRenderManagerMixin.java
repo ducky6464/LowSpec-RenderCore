@@ -6,11 +6,14 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.Frustum;
 import net.minecraft.client.render.entity.EntityRenderManager;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -44,6 +47,12 @@ public abstract class EntityRenderManagerMixin {
             maxDistance = config.passiveMobRenderDistance;
         } else if (entity instanceof ItemEntity) {
             maxDistance = config.droppedItemRenderDistance;
+        } else if (entity instanceof ProjectileEntity) {
+            maxDistance = config.projectileRenderDistance;
+        } else if (entity instanceof ExperienceOrbEntity) {
+            maxDistance = config.experienceOrbRenderDistance;
+        } else if (entity instanceof ArmorStandEntity) {
+            maxDistance = config.armorStandRenderDistance;
         }
 
         if (maxDistance >= 0
