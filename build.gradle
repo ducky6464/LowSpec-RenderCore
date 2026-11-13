@@ -3,6 +3,11 @@ plugins {
     id 'maven-publish'
 }
 
+repositories {
+    maven { url = 'https://maven.fabricmc.net/' }
+    mavenCentral()
+}
+
 version = project.mod_version
 group = project.maven_group
 
