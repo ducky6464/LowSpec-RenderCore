@@ -31,7 +31,7 @@ public abstract class EntityRenderManagerMixin {
         if (config == null || !config.entityDistanceCullingEnabled) return;
 
         MinecraftClient client = MinecraftClient.getInstance();
-        if (entity == client.player || entity.hasPassengers() && entity == client.getCameraEntity()) return;
+        if (entity == client.player || entity == client.getCameraEntity()) return;
 
         int maxDistance = -1;
         if (entity instanceof PlayerEntity) {
