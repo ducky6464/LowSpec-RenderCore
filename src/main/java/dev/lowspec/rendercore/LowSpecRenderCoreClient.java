@@ -1,8 +1,10 @@
 package dev.lowspec.rendercore;
 
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.text.Text;
@@ -58,6 +60,15 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                         .then(ClientCommandManager.literal("culling")
                                 .then(ClientCommandManager.literal("on").executes(context -> setCulling(context.getSource(), true)))
                                 .then(ClientCommandManager.literal("off").executes(context -> setCulling(context.getSource(), false))))
+                        .then(ClientCommandManager.literal("distance")
+                                .then(distanceCommand("players"))
+                                .then(distanceCommand("hostile"))
+                                .then(distanceCommand("passive"))
+                                .then(distanceCommand("villagers"))
+                                .then(distanceCommand("items"))
+                                .then(distanceCommand("projectiles"))
+                                .then(distanceCommand("orbs"))
+                                .then(distanceCommand("armorstands")))
                 ));
 
         LOGGER.info("LowSpec RenderCore initialized. Diagnostics: {}. Lighting timing: {}. Entity culling: {}.",
@@ -66,7 +77,43 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                 CONFIG.entityDistanceCullingEnabled ? "on" : "off");
     }
 
-    private static int setCulling(net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source, boolean enabled) {
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<FabricClientCommandSource> distanceCommand(String category) {
+        return ClientCommandManager.literal(category)
+                .then(ClientCommandManager.argument("blocks", IntegerArgumentType.integer(8, 512))
+                        .executes(context -> setDistance(context.getSource(), category,
+                                IntegerArgumentType.getInteger(context, "blocks"))));
+    }
+
+    private static int setDistance(FabricClientCommandSource source, String category, int requested) {
+        int min = category.equals("players") || category.equals("hostile")
+                || category.equals("passive") || category.equals("villagers") ? 16 : 8;
+        int max = category.equals("players") ? 512
+                : category.equals("hostile") || category.equals("passive") || category.equals("villagers") ? 256 : 128;
+        int value = Math.max(min, Math.min(max, requested));
+        switch (category) {
+            case "players" -> CONFIG.playerRenderDistance = value;
+            case "hostile" -> CONFIG.hostileMobRenderDistance = value;
+            case "passive" -> CONFIG.passiveMobRenderDistance = value;
+            case "villagers" -> CONFIG.villagerRenderDistance = value;
+            case "items" -> CONFIG.droppedItemRenderDistance = value;
+            case "projectiles" -> CONFIG.projectileRenderDistance = value;
+            case "orbs" -> CONFIG.experienceOrbRenderDistance = value;
+            case "armorstands" -> CONFIG.armorStandRenderDistance = value;
+            default -> {
+                source.sendFeedback(Text.literal("Unknown entity category."));
+                return 0;
+            }
+        }
+        try {
+            CONFIG.save(FabricLoader.getInstance().getConfigDir());
+            source.sendFeedback(Text.literal("Render distance for " + category + " set to " + value + " blocks."));
+        } catch (IOException exception) {
+            source.sendFeedback(Text.literal("Could not save LowSpec RenderCore settings: " + exception.getMessage()));
+        }
+        return 1;
+    }
+
+    private static int setCulling(FabricClientCommandSource source, boolean enabled) {
         CONFIG.entityDistanceCullingEnabled = enabled;
         try {
             CONFIG.save(FabricLoader.getInstance().getConfigDir());
