@@ -32,4 +32,5 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
 
     public static double getAverageClientTickMillis() { return averageTickMillis; }
     public static long getMeasuredTicks() { return measuredTicks; }
+    public static LightingMetrics.Snapshot getLightingMetrics() { return LightingMetrics.snapshot(); }
 }
