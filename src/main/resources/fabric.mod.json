@@ -4,10 +4,29 @@
   "version": "${version}",
   "name": "LowSpec RenderCore",
   "description": "A player-controlled performance and diagnostics mod focused on low-spec systems.",
-  "authors": ["LowSpec RenderCore contributors"],
+  "authors": [
+    "LowSpec RenderCore contributors"
+  ],
   "license": "MIT",
   "environment": "client",
-  "entrypoints": { "client": ["dev.lowspec.rendercore.LowSpecRenderCoreClient"] },
-  "mixins": ["lowspec_rendercore.mixins.json"],
-  "depends": { "fabricloader": ">=0.18.2", "minecraft": "1.21.11", "java": ">=21", "fabric-api": "*" }
+  "entrypoints": {
+    "client": [
+      "dev.lowspec.rendercore.LowSpecRenderCoreClient"
+    ],
+    "modmenu": [
+      "dev.lowspec.rendercore.ModMenuIntegration"
+    ]
+  },
+  "mixins": [
+    "lowspec_rendercore.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "minecraft": "1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": ">=17.0.1"
+  }
 }
