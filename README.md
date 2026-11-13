@@ -18,6 +18,7 @@ Implemented:
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Optional per-client-tick particle admission budget to limit sudden particle bursts. This limits newly admitted particles per tick; it does not remove existing particles or change server-side effects.
+- Optional block-entity render-distance culling at render-state creation time, with beacon rendering preserved.
 - Independent distance values for each supported entity category.
 - GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
 
@@ -48,7 +49,7 @@ Not implemented yet:
 
 ## Mod Menu settings screen
 
-Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for LowSpec RenderCore in the Mods list. The screen lets you adjust all eight entity distance categories, set the per-tick particle budget (50–2,000), and toggle entity culling, particle limiting, general diagnostics, lighting timing, and chunk diagnostics. Changes save automatically. Mod Menu is optional; command controls remain available without it.
+Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for LowSpec RenderCore in the Mods list. The screen lets you adjust all eight entity distance categories, set the per-tick particle budget (50–2,000), adjust block-entity render distance (16–256 blocks), and toggle entity culling, block-entity culling, particle limiting, general diagnostics, lighting timing, and chunk diagnostics. Changes save automatically. Mod Menu is optional; command controls remain available without it.
 
 ## In-game commands
 
@@ -57,7 +58,7 @@ Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for 
 - `/rendercore culling off` disables entity-distance culling and saves the setting.
 - `/rendercore distance players 128` changes the selected category's render distance in blocks. Categories: `players`, `hostile`, `passive`, `villagers`, `items`, `projectiles`, `orbs`, `armorstands`. Values are clamped to safe supported ranges and saved automatically.
 
-The particle budget defaults to 400 new particle admissions per client tick and can be changed or disabled in Mod Menu. This is a burst limiter, not a cap on total live particles.
+The particle budget defaults to 400 new particle admissions per client tick and can be changed or disabled in Mod Menu. This is a burst limiter, not a cap on total live particles. Block-entity culling defaults to 96 blocks and preserves beacon render states; other distant block-entity render states are skipped beyond the selected distance.
 
 ## Build
 
