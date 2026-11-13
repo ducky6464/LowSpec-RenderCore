@@ -10,6 +10,8 @@ Implemented:
 - Fabric Loom project targeting Minecraft 1.21.11 and Java 21.
 - Persistent, player-owned configuration.
 - Basic average client tick-time measurement.
+- In-game `/rendercore stats` command showing measured tick and lighting timings.
+- In-game `/rendercore culling on` and `/rendercore culling off` commands that save the setting automatically.
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Independent distance values for each supported entity category.
@@ -39,6 +41,12 @@ Not implemented yet:
 - In-game configuration screen or HUD.
 - Frame-time percentiles and GPU metrics.
 - In-game compatibility and performance testing across hardware.
+
+## In-game commands
+
+- `/rendercore stats` displays the available client tick and lighting diagnostics. These are measurements, not FPS or GPU readings.
+- `/rendercore culling on` enables entity-distance culling and saves the setting.
+- `/rendercore culling off` disables entity-distance culling and saves the setting.
 
 ## Build
 
