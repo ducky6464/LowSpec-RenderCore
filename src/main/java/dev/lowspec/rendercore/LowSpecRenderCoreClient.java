@@ -10,28 +10,26 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
     public static final String MOD_ID = "lowspec_rendercore";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
     public static RenderCoreConfig CONFIG;
+
+    private static long measuredTicks;
+    private static double averageTickMillis;
     private long tickStartNanos;
-    private long lastTickNanos;
-    private long measuredTicks;
-    private double averageTickMillis;
 
     @Override
     public void onInitializeClient() {
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
         ClientTickEvents.START_CLIENT_TICK.register(client -> tickStartNanos = System.nanoTime());
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            long now = System.nanoTime();
-            if (CONFIG.diagnosticsEnabled && tickStartNanos != 0L) {
-                double elapsedMs = (now - tickStartNanos) / 1_000_000.0;
-                measuredTicks++;
-                averageTickMillis += (elapsedMs - averageTickMillis) / measuredTicks;
-            }
-            lastTickNanos = now;
+            if (!CONFIG.diagnosticsEnabled || tickStartNanos == 0L) return;
+            double elapsedMs = (System.nanoTime() - tickStartNanos) / 1_000_000.0;
+            measuredTicks++;
+            averageTickMillis += (elapsedMs - averageTickMillis) / measuredTicks;
         });
-        LOGGER.info("LowSpec RenderCore initialized. Player-controlled diagnostics are {}.", CONFIG.diagnosticsEnabled ? "enabled" : "disabled");
+        LOGGER.info("LowSpec RenderCore initialized. Diagnostics: {}. Lighting timing: {}.",
+                CONFIG.diagnosticsEnabled ? "on" : "off",
+                CONFIG.lightingDiagnosticsEnabled ? "on" : "off");
     }
 
-    public double getAverageClientTickMillis() { return averageTickMillis; }
-    public long getMeasuredTicks() { return measuredTicks; }
-    public long getLastTickNanos() { return lastTickNanos; }
+    public static double getAverageClientTickMillis() { return averageTickMillis; }
+    public static long getMeasuredTicks() { return measuredTicks; }
 }
