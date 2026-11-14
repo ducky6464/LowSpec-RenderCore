@@ -21,6 +21,10 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
     private static long measuredTicks;
     private static double averageTickMillis;
     private static volatile double lastClientTickMillis;
+    private static volatile long currentClientTickStartNanos;
+    private static long lastLightingDeferredTickStart;
+    private static long forceLightingTickStart;
+    private static int consecutiveLightingDeferredTicks;
     private long tickStartNanos;
 
     @Override
@@ -29,6 +33,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         RenderCoreHud.register();
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             tickStartNanos = System.nanoTime();
+            currentClientTickStartNanos = tickStartNanos;
             ParticleBudget.resetForNewTick();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -45,6 +50,8 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             // Include scheduler drain time so adaptive upload pacing sees the full client tick cost.
             double elapsedMs = (System.nanoTime() - tickStartNanos) / 1_000_000.0;
             lastClientTickMillis = elapsedMs;
+            if (elapsedMs < 40.0) consecutiveLightingDeferredTicks = 0;
+            currentClientTickStartNanos = 0L;
             if (!CONFIG.diagnosticsEnabled) return;
             measuredTicks++;
             averageTickMillis += (elapsedMs - averageTickMillis) / measuredTicks;
@@ -160,6 +167,26 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
 
     public static double getAverageClientTickMillis() { return averageTickMillis; }
     public static double getLastClientTickMillis() { return lastClientTickMillis; }
+
+    /** Defer lighting only after the current tick is already overloaded; never discard queued updates. */
+    public static boolean shouldDeferLightingUpdates() {
+        RenderCoreConfig config = CONFIG;
+        long tickStart = currentClientTickStartNanos;
+        if (config == null || !config.lightingUpdatePacingEnabled || tickStart == 0L) return false;
+        if (tickStart == forceLightingTickStart) return false;
+        if (System.nanoTime() - tickStart < 40_000_000L) return false;
+        if (tickStart != lastLightingDeferredTickStart) {
+            lastLightingDeferredTickStart = tickStart;
+            consecutiveLightingDeferredTicks++;
+            if (consecutiveLightingDeferredTicks >= 3) {
+                // Force one complete lighting pass after at most two deferred heavy ticks.
+                forceLightingTickStart = tickStart;
+                consecutiveLightingDeferredTicks = 0;
+                return false;
+            }
+        }
+        return true;
+    }
     public static long getMeasuredTicks() { return measuredTicks; }
     public static LightingMetrics.Snapshot getLightingMetrics() { return LightingMetrics.snapshot(); }
 }
