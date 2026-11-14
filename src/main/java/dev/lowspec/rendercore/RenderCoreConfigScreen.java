@@ -1,14 +1,11 @@
 package dev.lowspec.rendercore;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.BooleanSupplier;
@@ -17,7 +14,6 @@ import java.util.function.Consumer;
 public final class RenderCoreConfigScreen extends Screen {
     private static final String[] PAGES = {"Entities", "Other", "Chunks", "Lighting", "Diagnostics"};
     private final Screen parent;
-    private final List<String> rowLabels = new ArrayList<>();
     private int page;
 
     public RenderCoreConfigScreen(Screen parent) {
@@ -27,8 +23,9 @@ public final class RenderCoreConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        rowLabels.clear();
         int center = width / 2;
+        addDrawable((context, mouseX, mouseY, delta) ->
+                context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF));
         int tabWidth = Math.min(58, Math.max(42, (width - 20) / PAGES.length));
         int totalWidth = tabWidth * PAGES.length;
         int tabX = center - totalWidth / 2;
@@ -105,7 +102,7 @@ public final class RenderCoreConfigScreen extends Screen {
     }
 
     private void toggle(String label, int y, BooleanSupplier getter, Consumer<Boolean> setter) {
-        rowLabels.add(label);
+        addRowLabel(label, y);
         addDrawableChild(ButtonWidget.builder(toggleText(getter.getAsBoolean()), b -> {
             setter.accept(!getter.getAsBoolean());
             saveConfig();
@@ -115,8 +112,11 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private void adjust(String label, int y, IntSupplier getter, IntConsumer setter,
                         int step, int min, int max) {
-        rowLabels.add(label);
+        addRowLabel(label, y);
         int x = width / 2 + 20;
+        addDrawable((context, mouseX, mouseY, delta) ->
+                context.drawCenteredTextWithShadow(textRenderer, Text.literal(Integer.toString(getter.getAsInt())),
+                        x + 76, y + 6, 0xE0E0E0));
         addDrawableChild(ButtonWidget.builder(Text.literal("-"), b -> {
             setter.accept(Math.max(min, getter.getAsInt() - step));
             saveConfig();
@@ -131,41 +131,10 @@ public final class RenderCoreConfigScreen extends Screen {
         return Text.literal(enabled ? "ON" : "OFF");
     }
 
-    @Override
-    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Screen.render() owns background rendering (including the blur pass).
-        // Calling renderBackground() here as well caused the blur to run twice.
-        super.render(context, mouseX, mouseY, delta);
-
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer, Text.literal(PAGES[page]), width / 2, 68, 0xB8C8D8);
-        int y = 88;
-        for (String label : rowLabels) {
-            context.drawTextWithShadow(textRenderer, Text.literal(label), width / 2 - 150, y, 0xFFFFFF);
-            y += page == 0 ? 27 : 30;
-        }
-        if (page == 0 || page == 1 || page == 2) {
-            RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-            if (page == 0) {
-                int[] values = {c.playerRenderDistance, c.hostileMobRenderDistance, c.passiveMobRenderDistance,
-                        c.villagerRenderDistance, c.droppedItemRenderDistance, c.projectileRenderDistance,
-                        c.experienceOrbRenderDistance, c.armorStandRenderDistance};
-                drawValues(context, values, 109, 27);
-            } else if (page == 1) {
-                drawValues(context, new int[]{c.blockEntityRenderDistance, c.maxParticlesPerTick}, 118, 60);
-            } else {
-                drawValues(context, new int[]{c.chunkRebuildsPerTick, c.chunkUploadsPerFrame}, 118, 60);
-            }
-        }
-    }
-
-    private void drawValues(DrawContext context, int[] values, int startY, int spacing) {
-        int y = startY;
-        for (int value : values) {
-            context.drawCenteredTextWithShadow(textRenderer, Text.literal(Integer.toString(value)),
-                    width / 2 + 76, y, 0xE0E0E0);
-            y += spacing;
-        }
+    private void addRowLabel(String label, int y) {
+        int labelX = width / 2 - 190;
+        addDrawable((context, mouseX, mouseY, delta) ->
+                context.drawTextWithShadow(textRenderer, Text.literal(label), labelX, y + 6, 0xFFFFFF));
     }
 
     private void saveConfig() {
