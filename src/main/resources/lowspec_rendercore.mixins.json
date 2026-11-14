@@ -19,6 +19,7 @@
     "dev.lowspec.rendercore.mixin.ChunkRenderDataGpuPoolMixin",
     "dev.lowspec.rendercore.mixin.BuffersGpuPoolMixin",
     "dev.lowspec.rendercore.mixin.ChunkLightProviderStateCacheMixin",
+    "dev.lowspec.rendercore.mixin.ChunkLightProviderShapeCacheMixin",
     "dev.lowspec.rendercore.mixin.MinecraftClientGpuPoolCleanupMixin"
   ],
   "injectors": {
