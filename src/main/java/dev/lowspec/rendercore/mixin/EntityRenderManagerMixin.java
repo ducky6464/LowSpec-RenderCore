@@ -47,30 +47,24 @@ public abstract class EntityRenderManagerMixin {
             if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.playerRenderDistance;
         } else if (entity instanceof VillagerEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.villagerRenderDistance;
         } else if (entity instanceof HostileEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.hostileMobRenderDistance;
         } else if (entity instanceof PassiveEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.passiveMobRenderDistance;
         } else if (entity instanceof ItemEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.droppedItemRenderDistance;
         } else if (entity instanceof ProjectileEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.projectileRenderDistance;
         } else if (entity instanceof ExperienceOrbEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.experienceOrbRenderDistance;
         } else if (entity instanceof ArmorStandEntity) {
-            if (!config.entityDistanceCullingEnabled) return;
             maxDistance = config.armorStandRenderDistance;
         }
 
         if (maxDistance < 0) return;
         if (!(entity instanceof PlayerEntity)) {
+            if (!config.entityDistanceCullingEnabled && adaptiveScale >= 1.0) return;
             maxDistance = (int) Math.max(8, Math.floor(maxDistance * adaptiveScale));
         }
         if (entity.squaredDistanceTo(cameraX, cameraY, cameraZ) > (double) maxDistance * maxDistance) {
