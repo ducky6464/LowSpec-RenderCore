@@ -1,4 +1,4 @@
-name: Client startup smoke test
+name: Client startup and settings screen test
 on:
   push:
   pull_request:
@@ -7,7 +7,7 @@ on:
 jobs:
   client-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -17,27 +17,86 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.4.0'
-      - name: Install software display
+      - name: Install visual test tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0
-      - name: Launch Minecraft client and verify mixin startup
+          sudo apt-get install -y xvfb xdotool tesseract-ocr libgl1-mesa-dri libglx-mesa0
+      - name: Launch Minecraft and capture the settings screen
         shell: bash
         run: |
-          set +e
-          timeout --signal=TERM --kill-after=15s 120s xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 gradle runClient --no-daemon > client-smoke.log 2>&1
-          status=$?
-          set -e
-          cat client-smoke.log
-          if grep -Eiq 'Mixin apply failed|InvalidInjectionException|MixinTransformerError|Critical injection failure|Error loading class|Could not execute entrypoint' client-smoke.log; then
-            echo "Minecraft client reported a mixin or entrypoint startup failure."
-            exit 1
-          fi
-          if ! grep -q 'Loading Minecraft 1.21.11 with Fabric Loader' client-smoke.log; then
-            echo "Minecraft did not reach Fabric Loader startup."
-            exit 1
-          fi
-          if [ "$status" -ne 124 ] && [ "$status" -ne 137 ] && [ "$status" -ne 0 ]; then
-            echo "Minecraft startup exited unexpectedly with status $status."
-            exit 1
-          fi
+          set -euo pipefail
+          mkdir -p run/screenshots
+          export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dlowspec.rendercore.testConfigScreen=true"
+          xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
+            set -euo pipefail
+            gradle runClient --no-daemon --args="--width 1280 --height 720" > client-smoke.log 2>&1 &
+            gradle_pid=$!
+            cleanup() {
+              kill "$gradle_pid" 2>/dev/null || true
+              wait "$gradle_pid" 2>/dev/null || true
+            }
+            trap cleanup EXIT
+
+            ready=0
+            for i in $(seq 1 90); do
+              if grep -q "RENDERCORE_CONFIG_SCREEN_TEST_READY" client-smoke.log; then
+                ready=1
+                break
+              fi
+              if ! kill -0 "$gradle_pid" 2>/dev/null; then
+                cat client-smoke.log
+                echo "Minecraft exited before opening the settings screen."
+                exit 1
+              fi
+              sleep 2
+            done
+            if [ "$ready" -ne 1 ]; then
+              cat client-smoke.log
+              echo "Timed out waiting for the settings screen to open."
+              exit 1
+            fi
+
+            window_id=""
+            for i in $(seq 1 20); do
+              window_id=$(xdotool search --onlyvisible --name "Minecraft" 2>/dev/null | head -n 1 || true)
+              [ -n "$window_id" ] && break
+              sleep 1
+            done
+            if [ -z "$window_id" ]; then
+              cat client-smoke.log
+              echo "Could not find the Minecraft window."
+              exit 1
+            fi
+
+            xdotool windowactivate --sync "$window_id"
+            sleep 3
+            xdotool key --clearmodifiers F2
+            screenshot=""
+            for i in $(seq 1 20); do
+              screenshot=$(find run/screenshots -type f -name "*.png" | sort | tail -n 1)
+              [ -n "$screenshot" ] && break
+              sleep 1
+            done
+            if [ -z "$screenshot" ]; then
+              cat client-smoke.log
+              echo "Minecraft did not save a settings-screen screenshot."
+              exit 1
+            fi
+
+            tesseract "$screenshot" stdout 2>/dev/null | tee settings-screen-ocr.txt
+            grep -Eiq "Entity distance culling" settings-screen-ocr.txt
+            grep -Eiq "Players distance" settings-screen-ocr.txt
+            grep -Eiq "Hostile mob distance" settings-screen-ocr.txt
+            grep -Eiq "Diagnostics" settings-screen-ocr.txt
+            echo "Settings screen visual text test passed."
+          '
+      - name: Upload settings screen evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: RenderCore-settings-screen-test
+          path: |
+            run/screenshots/*.png
+            settings-screen-ocr.txt
+            client-smoke.log
+          if-no-files-found: warn
