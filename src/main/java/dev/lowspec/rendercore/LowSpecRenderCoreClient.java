@@ -106,6 +106,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | " + lightCache.hits() + " hits / " + lightCache.misses()
                                             + " misses | " + String.format(java.util.Locale.ROOT, "%.1f%% hit rate",
                                                     lightCache.hitRatePercent())));
+                            LightingShapeCache.Snapshot shapeCache = LightingShapeCache.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Lighting shape cache: " + (CONFIG.lightingShapeCacheEnabled ? "ON" : "OFF")
+                                            + " | " + shapeCache.hits() + " hits / " + shapeCache.misses()
+                                            + " misses | " + String.format(java.util.Locale.ROOT, "%.1f%% hit rate",
+                                                    shapeCache.hitRatePercent())));
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
