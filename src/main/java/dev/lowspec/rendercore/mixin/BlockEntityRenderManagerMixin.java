@@ -30,7 +30,7 @@ public abstract class BlockEntityRenderManagerMixin {
         if (client.player == null || client.gameRenderer == null) return;
         // Use the active camera, not the player entity: spectator/free-camera views
         // must cull relative to what is actually being rendered.
-        var cameraPos = client.gameRenderer.getCamera().getPos();
+        var cameraPos = client.gameRenderer.getCamera().getCameraPos();
         double dx = blockEntity.getPos().getX() + 0.5 - cameraPos.getX();
         double dy = blockEntity.getPos().getY() + 0.5 - cameraPos.getY();
         double dz = blockEntity.getPos().getZ() + 0.5 - cameraPos.getZ();
