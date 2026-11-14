@@ -31,14 +31,17 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             ParticleBudget.resetForNewTick();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            long elapsedTickNanos = tickStartNanos == 0L ? 0L : System.nanoTime() - tickStartNanos;
             if (client.world != null) {
-                int rebuildBudget = CONFIG.chunkSchedulingEnabled ? CONFIG.chunkRebuildsPerTick : 4096;
+                int rebuildBudget = CONFIG.chunkSchedulingEnabled
+                        ? ChunkRenderScheduler.adaptiveBudget(CONFIG.chunkRebuildsPerTick, elapsedTickNanos)
+                        : 4096;
                 ChunkRenderScheduler.drain(client.worldRenderer, client.world, rebuildBudget);
             } else {
                 ChunkRenderScheduler.clear();
             }
             if (!CONFIG.diagnosticsEnabled || tickStartNanos == 0L) return;
-            double elapsedMs = (System.nanoTime() - tickStartNanos) / 1_000_000.0;
+            double elapsedMs = elapsedTickNanos / 1_000_000.0;
             measuredTicks++;
             averageTickMillis += (elapsedMs - averageTickMillis) / measuredTicks;
         });
@@ -70,7 +73,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                             context.getSource().sendFeedback(Text.literal(
                                     "Paced chunk rebuild requests: " + ChunkRenderScheduler.pendingCount()
                                             + " | Scheduler: " + (CONFIG.chunkSchedulingEnabled ? "ON" : "OFF")
-                                            + " | Budget: " + CONFIG.chunkRebuildsPerTick + "/tick"));
+                                            + " | Budget ceiling: " + CONFIG.chunkRebuildsPerTick + "/tick"));
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
