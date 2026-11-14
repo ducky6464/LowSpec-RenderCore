@@ -128,6 +128,14 @@ public final class RenderCoreConfigScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkUploads(1))
                 .dimensions(center + 112, uploadY, 28, 20).build());
 
+        int emptyFastPathY = uploadY + 25;
+        addDrawableChild(ButtonWidget.builder(emptySectionFastPathText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled =
+                    !LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled;
+            saveConfig();
+            button.setMessage(emptySectionFastPathText());
+        }).dimensions(center - 145, emptyFastPathY, 140, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 30, 200, 20).build());
     }
@@ -230,6 +238,10 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private Text lightingPacingText() {
         return Text.literal("Lighting pacing: " + (LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled ? "ON" : "OFF"));
+    }
+
+    private Text emptySectionFastPathText() {
+        return Text.literal("Empty mesh skip: " + (LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled ? "ON" : "OFF"));
     }
 
     private Text hudText() {
