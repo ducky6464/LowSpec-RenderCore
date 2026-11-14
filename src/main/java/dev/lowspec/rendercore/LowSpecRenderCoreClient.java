@@ -31,6 +31,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             ParticleBudget.resetForNewTick();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.world != null) {
+                int rebuildBudget = CONFIG.chunkSchedulingEnabled ? CONFIG.chunkRebuildsPerTick : 4096;
+                ChunkRenderScheduler.drain(client.worldRenderer, client.world, rebuildBudget);
+            } else {
+                ChunkRenderScheduler.clear();
+            }
             if (!CONFIG.diagnosticsEnabled || tickStartNanos == 0L) return;
             double elapsedMs = (System.nanoTime() - tickStartNanos) / 1_000_000.0;
             measuredTicks++;
