@@ -1,14 +1,12 @@
 package dev.lowspec.rendercore;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 /**
  * Aether's first adaptive policy. It observes per-frame entity candidate volume
  * and frame time, then adjusts non-player render distance with hysteresis.
  * It never changes world state and never hides the local or remote player.
  */
 public final class AdaptiveEntityVisibility {
-    private static final AtomicInteger CANDIDATES = new AtomicInteger();
+    private static int candidates;
     private static volatile double distanceScale = 1.0;
     private static volatile int lastCandidates;
     private static int overloadedFrames;
@@ -17,11 +15,11 @@ public final class AdaptiveEntityVisibility {
     private AdaptiveEntityVisibility() { }
 
     public static void beginFrame() {
-        CANDIDATES.set(0);
+        candidates = 0;
     }
 
     public static void recordCandidate(boolean player) {
-        if (!player) CANDIDATES.incrementAndGet();
+        if (!player) candidates++;
     }
 
     public static void finishFrame(long frameNanos) {
@@ -31,7 +29,6 @@ public final class AdaptiveEntityVisibility {
             return;
         }
 
-        int candidates = CANDIDATES.get();
         lastCandidates = candidates;
         boolean entityPressure = candidates > config.adaptiveEntityCandidateBudget;
         boolean framePressure = frameNanos >= 45_000_000L;
