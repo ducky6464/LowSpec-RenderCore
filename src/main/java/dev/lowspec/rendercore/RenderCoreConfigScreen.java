@@ -134,7 +134,19 @@ public final class RenderCoreConfigScreen extends Screen {
                     !LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled;
             saveConfig();
             button.setMessage(emptySectionFastPathText());
-        }).dimensions(center - 145, emptyFastPathY, 140, 20).build());
+        }).dimensions(center - 145, emptyFastPathY, 90, 20).build());
+        addDrawableChild(ButtonWidget.builder(gpuBufferPoolText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled =
+                    !LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled;
+            saveConfig();
+            button.setMessage(gpuBufferPoolText());
+        }).dimensions(center - 50, emptyFastPathY, 90, 20).build());
+        addDrawableChild(ButtonWidget.builder(lightingStateCacheText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled =
+                    !LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled;
+            saveConfig();
+            button.setMessage(lightingStateCacheText());
+        }).dimensions(center + 45, emptyFastPathY, 90, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 22, 200, 20).build());
@@ -241,7 +253,15 @@ public final class RenderCoreConfigScreen extends Screen {
     }
 
     private Text emptySectionFastPathText() {
-        return Text.literal("Empty mesh skip: " + (LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled ? "ON" : "OFF"));
+        return Text.literal("Empty mesh: " + (LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled ? "ON" : "OFF"));
+    }
+
+    private Text gpuBufferPoolText() {
+        return Text.literal("GPU pool: " + (LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled ? "ON" : "OFF"));
+    }
+
+    private Text lightingStateCacheText() {
+        return Text.literal("Light cache: " + (LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled ? "ON" : "OFF"));
     }
 
     private Text hudText() {
