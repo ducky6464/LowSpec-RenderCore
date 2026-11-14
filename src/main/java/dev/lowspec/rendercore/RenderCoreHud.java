@@ -72,8 +72,10 @@ public final class RenderCoreHud {
                             + " reuses | " + String.format(java.util.Locale.ROOT, "%.1f MiB",
                                     ChunkGpuBufferPool.getPooledBytes() / 1048576.0)),
                     x, y + 110, color);
+            LightingStateCache.Snapshot lightCache = LightingStateCache.snapshot();
             context.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Lighting state cache: " + (config.lightingStateCacheEnabled ? "ON" : "OFF")),
+                    Text.literal("Lighting cache: " + (config.lightingStateCacheEnabled ? "ON" : "OFF")
+                            + " | " + String.format(java.util.Locale.ROOT, "%.1f%% hits", lightCache.hitRatePercent())),
                     x, y + 121, color);
         });
     }
