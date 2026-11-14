@@ -10,7 +10,8 @@
     "BlockEntityRenderManagerMixin",
     "WorldRendererChunkMetricsMixin",
     "WorldRendererChunkSchedulerMixin",
-    "WorldRendererInvoker"
+    "WorldRendererInvoker",
+    "ChunkBuilderUploadPacingMixin"
   ],
   "injectors": {
     "defaultRequire": 1
