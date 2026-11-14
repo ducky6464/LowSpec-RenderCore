@@ -153,6 +153,12 @@ public final class RenderCoreConfigScreen extends Screen {
             saveConfig();
             button.setMessage(lightingShapeCacheText());
         }).dimensions(center + 71, emptyFastPathY, 68, 20).build());
+        addDrawableChild(ButtonWidget.builder(modelPartsCacheText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled =
+                    !LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled;
+            saveConfig();
+            button.setMessage(modelPartsCacheText());
+        }).dimensions(center - 100, emptyFastPathY + 25, 200, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 22, 200, 20).build());
@@ -272,6 +278,11 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private Text lightingShapeCacheText() {
         return Text.literal("Shapes: " + (LowSpecRenderCoreClient.CONFIG.lightingShapeCacheEnabled ? "ON" : "OFF"));
+    }
+
+    private Text modelPartsCacheText() {
+        return Text.literal("Model parts cache: "
+                + (LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled ? "ON" : "OFF"));
     }
 
     private Text hudText() {
