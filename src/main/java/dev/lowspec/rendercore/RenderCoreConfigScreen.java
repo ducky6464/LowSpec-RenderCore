@@ -133,7 +133,10 @@ public final class RenderCoreConfigScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        renderBackground(context, mouseX, mouseY, delta);
+        // Screen.render() owns background rendering (including the blur pass).
+        // Calling renderBackground() here as well caused the blur to run twice.
+        super.render(context, mouseX, mouseY, delta);
+
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF);
         context.drawCenteredTextWithShadow(textRenderer, Text.literal(PAGES[page]), width / 2, 68, 0xB8C8D8);
         int y = 88;
@@ -154,7 +157,6 @@ public final class RenderCoreConfigScreen extends Screen {
                 drawValues(context, new int[]{c.chunkRebuildsPerTick, c.chunkUploadsPerFrame}, 118, 60);
             }
         }
-        super.render(context, mouseX, mouseY, delta);
     }
 
     private void drawValues(DrawContext context, int[] values, int startY, int spacing) {
