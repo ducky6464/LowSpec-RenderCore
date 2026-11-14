@@ -90,6 +90,16 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + String.format(java.util.Locale.ROOT, "%.2f ms avg / %.2f ms p95",
                                                     frame.averageRenderMillis(), frame.p95RenderMillis())
                                             + " | Samples: " + frame.samples()));
+                            EntityRenderMetrics.Snapshot entityMetrics = EntityRenderMetrics.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether entity pipeline | Extracted: " + entityMetrics.extractionsThisFrame()
+                                            + " (" + entityMetrics.playerExtractionsThisFrame() + " players)"
+                                            + " | Commands queued: " + entityMetrics.rendersThisFrame()
+                                            + " (" + entityMetrics.playerRendersThisFrame() + " players)"
+                                            + " | Avg extraction/frame: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageExtractionMillisPerFrame())
+                                            + " | Avg command enqueue/frame: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageRenderMillisPerFrame())));
                             context.getSource().sendFeedback(Text.literal(
                                     "Lighting calls: " + light.calls()
                                             + " | Average call: "
