@@ -45,7 +45,7 @@ render.armor_stands=64
 
 The config file is generated automatically on first launch. Distances are in blocks. This only prevents selected entities from being drawn beyond the chosen distance. It does not remove entities, change server simulation, or stop entity AI. The local player and active camera entity are preserved. Unknown entity categories retain vanilla rendering behavior.
 
-The instrumentation reports CPU-side work, not GPU execution or display-present time. Chunk update timing covers the CPU-side visible-chunk scheduling/update method; section mesh timing is measured separately on worker threads. Lighting pacing can defer a whole vanilla queue pass on overloaded ticks, but never discards queued work. The state cache only reuses block-state reads within the active pass. Neither change replaces vanilla's light propagation rules.
+The instrumentation reports CPU-side work, not GPU execution or display-present time. Chunk update timing covers the CPU-side visible-chunk scheduling/update method; section mesh timing is measured separately on worker threads. Lighting pacing can defer a whole vanilla queue pass on overloaded ticks, but never discards queued work. The lighting caches reuse block-state reads and deterministic face-shape results within the active pass. Neither change replaces vanilla's light propagation rules.
 
 Not implemented yet:
 - A replacement lighting propagation algorithm. The cache and overload-aware pacing optimize when and how often vanilla work is revisited, but the propagation rules and queue algorithms remain vanilla. Replacing these safely requires preserving every block-light and sky-light edge case, so it is not claimed as implemented.
@@ -54,7 +54,7 @@ Not implemented yet:
 
 ## Mod Menu settings screen
 
-Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for LowSpec RenderCore in the Mods list. The screen lets you adjust all eight entity distance categories, set the per-tick particle budget (50–2,000), adjust block-entity render distance (16–256 blocks), and toggle entity culling, block-entity culling, particle limiting, chunk upload pacing, chunk mesh state caching, empty-section mesh skipping, GPU buffer reuse, lighting update pacing, lighting state caching, general diagnostics, lighting timing, chunk diagnostics, and the optional performance HUD. Chunk upload pacing defaults to 8 uploads per frame and can be adjusted from 1–64. Changes save automatically. Mod Menu is optional; command controls remain available without it.
+Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for LowSpec RenderCore in the Mods list. The screen lets you adjust all eight entity distance categories, set the per-tick particle budget (50–2,000), adjust block-entity render distance (16–256 blocks), and toggle entity culling, block-entity culling, particle limiting, chunk upload pacing, chunk mesh state caching, empty-section mesh skipping, GPU buffer reuse, lighting update pacing, lighting state caching, lighting face-shape caching, general diagnostics, lighting timing, chunk diagnostics, and the optional performance HUD. Chunk upload pacing defaults to 8 uploads per frame and can be adjusted from 1–64. Changes save automatically. Mod Menu is optional; command controls remain available without it.
 
 ## In-game commands
 
