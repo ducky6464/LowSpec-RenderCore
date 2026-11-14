@@ -1,5 +1,6 @@
 package dev.lowspec.rendercore.mixin;
 
+import dev.lowspec.rendercore.ChunkUploadBudget;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import net.minecraft.client.render.chunk.ChunkBuilder;
 import org.spongepowered.asm.mixin.Final;
@@ -37,7 +38,7 @@ public abstract class ChunkBuilderUploadPacingMixin {
                 || !LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled) {
             return queue.poll();
         }
-        int limit = LowSpecRenderCoreClient.CONFIG.chunkUploadsPerFrame;
+        int limit = ChunkUploadBudget.effectiveLimit(LowSpecRenderCoreClient.CONFIG.chunkUploadsPerFrame);
         if (lowspec$uploadsThisFrame >= limit) return null;
         Object next = queue.poll();
         if (next != null) lowspec$uploadsThisFrame++;
