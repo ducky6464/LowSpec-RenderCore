@@ -177,7 +177,17 @@ public final class RenderCoreConfigScreen extends Screen {
         saveConfig();
     }
 
-    private void adjustChunkBudget(int amount) {\n        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;\n        c.chunkRebuildsPerTick = Math.max(16, Math.min(512, c.chunkRebuildsPerTick + amount));\n        saveConfig();\n    }\n\n    private Text chunkSchedulerText() {\n        return Text.literal("Chunk pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled ? "ON" : "OFF"));\n    }\n\n    private Text hudText() {
+    private void adjustChunkBudget(int amount) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        c.chunkRebuildsPerTick = Math.max(16, Math.min(512, c.chunkRebuildsPerTick + amount));
+        saveConfig();
+    }
+
+    private Text chunkSchedulerText() {
+        return Text.literal("Chunk pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled ? "ON" : "OFF"));
+    }
+
+    private Text hudText() {
         return Text.literal("Performance HUD: " + (LowSpecRenderCoreClient.CONFIG.performanceHudEnabled ? "ON" : "OFF"));
     }
 
