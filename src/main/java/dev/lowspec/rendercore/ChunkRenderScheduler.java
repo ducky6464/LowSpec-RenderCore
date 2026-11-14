@@ -42,7 +42,7 @@ public final class ChunkRenderScheduler {
         return true;
     }
 
-    public static void drain(WorldRenderer renderer, Object world, int budget) {
+    public static void drain(WorldRenderer renderer, Object world, int budget, long tickStartNanos) {
         synchronized (ChunkRenderScheduler.class) {
             if (world != currentWorld) {
                 IMPORTANT.clear();
@@ -57,6 +57,13 @@ public final class ChunkRenderScheduler {
             for (int remaining = budget; remaining > 0; remaining--) {
                 Map.Entry<SectionKey, Boolean> entry = pollNext();
                 if (entry == null) break;
+                // Keep ordinary rebuild work from extending an already overloaded tick.
+                // Important rebuilds still run so urgent visual updates are not stranded.
+                if (!entry.getValue() && tickStartNanos != 0L
+                        && System.nanoTime() - tickStartNanos >= 40_000_000L) {
+                    requeue(entry);
+                    break;
+                }
                 SectionKey key = entry.getKey();
                 try {
                     invoker.lowspec$invokeScheduleChunkRender(key.x(), key.y(), key.z(), entry.getValue());
@@ -71,6 +78,11 @@ public final class ChunkRenderScheduler {
         } finally {
             REPLAYING.remove();
         }
+    }
+
+    private static synchronized void requeue(Map.Entry<SectionKey, Boolean> entry) {
+        LinkedHashMap<SectionKey, Boolean> target = entry.getValue() ? IMPORTANT : NORMAL;
+        target.putIfAbsent(entry.getKey(), entry.getValue());
     }
 
     private static synchronized Map.Entry<SectionKey, Boolean> pollNext() {
