@@ -47,6 +47,11 @@ public final class RenderCoreHud {
                                 + " | uploads: " + builder.getChunksToUpload()
                                 + " | free buffers: " + builder.getFreeBufferCount()),
                         x, y + 55, color);
+                ChunkMeshMetrics.Snapshot mesh = ChunkMeshMetrics.snapshot();
+                context.drawTextWithShadow(client.textRenderer,
+                        Text.literal(String.format(java.util.Locale.ROOT,
+                                "Chunk mesh CPU: %.2f avg / %.2f p95 ms", mesh.averageMillis(), mesh.p95Millis())),
+                        x, y + 66, color);
             } else {
                 context.drawTextWithShadow(client.textRenderer, Text.literal("Chunk diagnostics: disabled"), x, y + 44, color);
             }
@@ -54,7 +59,7 @@ public final class RenderCoreHud {
             context.drawTextWithShadow(client.textRenderer,
                     Text.literal("Chunk upload cap: " + ChunkUploadBudget.getLastEffectiveLimit()
                             + " / frame (adaptive)"),
-                    x, y + 66, color);
+                    x, y + 77, color);
             context.drawTextWithShadow(client.textRenderer,
                     Text.literal("Particles admitted: " + (config.particleBudgetEnabled
                             ? ParticleBudget.getAdmittedThisTick() : "limiter off")),
