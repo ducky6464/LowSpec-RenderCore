@@ -58,4 +58,16 @@ public abstract class SectionBuilderMetricsMixin {
         lowspec$meshBuildStartNanos.remove();
         ChunkRegionStateCache.clear(region);
     }
+
+    @Inject(
+            method = "build(Lnet/minecraft/util/math/ChunkSectionPos;Lnet/minecraft/client/render/chunk/ChunkRendererRegion;Lcom/mojang/blaze3d/systems/VertexSorter;Lnet/minecraft/client/render/chunk/BlockBufferAllocatorStorage;)Lnet/minecraft/client/render/chunk/SectionBuilder$RenderData;",
+            at = @At("THROW")
+    )
+    private void lowspec$abortMeshBuild(ChunkSectionPos sectionPos, ChunkRendererRegion region,
+                                        VertexSorter sorter, BlockBufferAllocatorStorage storage,
+                                        CallbackInfoReturnable<SectionBuilder.RenderData> cir) {
+        lowspec$meshBuildStartNanos.remove();
+        ChunkRegionStateCache.clear(region);
+    }
+
 }
