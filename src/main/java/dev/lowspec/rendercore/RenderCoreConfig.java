@@ -19,6 +19,8 @@ public final class RenderCoreConfig {
     public boolean chunkUploadPacingEnabled = true;
     public boolean chunkMeshStateCacheEnabled = true;
     public boolean chunkEmptySectionFastPathEnabled = true;
+    public boolean chunkGpuBufferPoolEnabled = true;
+    public boolean lightingStateCacheEnabled = true;
     public int chunkUploadsPerFrame = 8;
     public boolean entityDistanceCullingEnabled = true;
     public boolean particleBudgetEnabled = true;
@@ -54,6 +56,8 @@ public final class RenderCoreConfig {
             config.chunkUploadPacingEnabled = Boolean.parseBoolean(p.getProperty("chunks.upload_pacing_enabled", "true"));
             config.chunkMeshStateCacheEnabled = Boolean.parseBoolean(p.getProperty("chunks.mesh_state_cache_enabled", "true"));
             config.chunkEmptySectionFastPathEnabled = Boolean.parseBoolean(p.getProperty("chunks.empty_section_fast_path_enabled", "true"));
+            config.chunkGpuBufferPoolEnabled = Boolean.parseBoolean(p.getProperty("chunks.gpu_buffer_pool_enabled", "true"));
+            config.lightingStateCacheEnabled = Boolean.parseBoolean(p.getProperty("lighting.state_cache_enabled", "true"));
             config.chunkUploadsPerFrame = bounded(p.getProperty("chunks.uploads_per_frame", "8"), 8, 1, 64);
             config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "true"));
             config.particleBudgetEnabled = Boolean.parseBoolean(p.getProperty("particles.budget_enabled", "true"));
@@ -85,6 +89,8 @@ public final class RenderCoreConfig {
         p.setProperty("chunks.upload_pacing_enabled", Boolean.toString(chunkUploadPacingEnabled));
         p.setProperty("chunks.mesh_state_cache_enabled", Boolean.toString(chunkMeshStateCacheEnabled));
         p.setProperty("chunks.empty_section_fast_path_enabled", Boolean.toString(chunkEmptySectionFastPathEnabled));
+        p.setProperty("chunks.gpu_buffer_pool_enabled", Boolean.toString(chunkGpuBufferPoolEnabled));
+        p.setProperty("lighting.state_cache_enabled", Boolean.toString(lightingStateCacheEnabled));
         p.setProperty("chunks.uploads_per_frame", Integer.toString(chunkUploadsPerFrame));
         p.setProperty("render.entity_distance_culling", Boolean.toString(entityDistanceCullingEnabled));
         p.setProperty("particles.budget_enabled", Boolean.toString(particleBudgetEnabled));
