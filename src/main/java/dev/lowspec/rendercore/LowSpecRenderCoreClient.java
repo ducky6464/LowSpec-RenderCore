@@ -28,6 +28,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
     private static long forceLightingTickStart;
     private static int consecutiveLightingDeferredTicks;
     private long tickStartNanos;
+    private boolean configScreenTestOpened;
 
     @Override
     public void onInitializeClient() {
@@ -45,6 +46,15 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             ParticleBudget.resetForNewTick();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            // CI-only visual test hook. The workflow enables this system property,
+            // then captures the real settings screen and checks its rendered text.
+            if (!configScreenTestOpened
+                    && Boolean.getBoolean("lowspec.rendercore.testConfigScreen")
+                    && client.currentScreen instanceof net.minecraft.client.gui.screen.TitleScreen) {
+                configScreenTestOpened = true;
+                client.setScreen(new RenderCoreConfigScreen(client.currentScreen));
+                LOGGER.info("RENDERCORE_CONFIG_SCREEN_TEST_READY");
+            }
             long elapsedTickNanos = tickStartNanos == 0L ? 0L : System.nanoTime() - tickStartNanos;
             if (client.world != null) {
                 int rebuildBudget = CONFIG.chunkSchedulingEnabled
