@@ -10,6 +10,10 @@ public final class ParticleBudget {
         admittedThisTick = 0;
     }
 
+    public static int getAdmittedThisTick() {
+        return admittedThisTick;
+    }
+
     public static boolean tryAdmit() {
         RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
         if (config == null || !config.particleBudgetEnabled) return true;
