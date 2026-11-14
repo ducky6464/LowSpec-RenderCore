@@ -12,6 +12,7 @@ public final class RenderCoreConfig {
     private static final String FILE_NAME = "lowspec-rendercore.properties";
     public boolean diagnosticsEnabled = false;
     public boolean lightingDiagnosticsEnabled = false;
+    public boolean lightingUpdatePacingEnabled = true;
     public boolean chunkDiagnosticsEnabled = false;
     public boolean chunkSchedulingEnabled = true;
     public int chunkRebuildsPerTick = 128;
@@ -44,6 +45,7 @@ public final class RenderCoreConfig {
             p.load(in);
             config.diagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.enabled", "false"));
             config.lightingDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.lighting", "false"));
+            config.lightingUpdatePacingEnabled = Boolean.parseBoolean(p.getProperty("lighting.pacing_enabled", "true"));
             config.chunkDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.chunks", "false"));
             config.chunkSchedulingEnabled = Boolean.parseBoolean(p.getProperty("chunks.scheduler_enabled", "true"));
             config.chunkRebuildsPerTick = bounded(p.getProperty("chunks.rebuilds_per_tick", "128"), 128, 16, 512);
@@ -72,6 +74,7 @@ public final class RenderCoreConfig {
         Properties p = new Properties();
         p.setProperty("diagnostics.enabled", Boolean.toString(diagnosticsEnabled));
         p.setProperty("diagnostics.lighting", Boolean.toString(lightingDiagnosticsEnabled));
+        p.setProperty("lighting.pacing_enabled", Boolean.toString(lightingUpdatePacingEnabled));
         p.setProperty("diagnostics.chunks", Boolean.toString(chunkDiagnosticsEnabled));
         p.setProperty("chunks.scheduler_enabled", Boolean.toString(chunkSchedulingEnabled));
         p.setProperty("chunks.rebuilds_per_tick", Integer.toString(chunkRebuildsPerTick));
