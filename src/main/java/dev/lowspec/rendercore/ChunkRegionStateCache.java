@@ -34,6 +34,19 @@ public final class ChunkRegionStateCache {
         cache.generations[slot] = cache.generation;
     }
 
+    /** Releases the region snapshot as soon as its section build finishes. */
+    public static void clear(ChunkRendererRegion region) {
+        Cache cache = LOCAL.get();
+        if (cache.region == region) {
+            cache.region = null;
+            cache.generation++;
+            if (cache.generation == 0) {
+                java.util.Arrays.fill(cache.generations, 0);
+                cache.generation = 1;
+            }
+        }
+    }
+
     private static int mix(long value) {
         value ^= value >>> 33;
         value *= 0xff51afd7ed558ccdL;
