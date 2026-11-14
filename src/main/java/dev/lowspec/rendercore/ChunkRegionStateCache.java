@@ -5,8 +5,8 @@ import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.util.math.BlockPos;
 
 /**
- * Small per-worker direct-mapped cache for repeated block reads while a section mesh is built.
- * Entries are scoped to one immutable ChunkRendererRegion at a time.
+ * Two-way set-associative per-worker cache for repeated block reads during a section mesh build.
+ * Entries are scoped to one immutable ChunkRendererRegion snapshot at a time.
  */
 public final class ChunkRegionStateCache {
     private static final ThreadLocal<Cache> LOCAL = ThreadLocal.withInitial(Cache::new);
@@ -17,9 +17,13 @@ public final class ChunkRegionStateCache {
         Cache cache = LOCAL.get();
         cache.useRegion(region);
         long key = pos.asLong();
-        int slot = mix(key) & (Cache.SIZE - 1);
-        if (cache.generations[slot] == cache.generation && cache.keys[slot] == key) {
-            return cache.values[slot];
+        int first = mix(key) & (Cache.SET_COUNT - 1);
+        int second = first + Cache.SET_COUNT;
+        if (cache.generations[first] == cache.generation && cache.keys[first] == key) {
+            return cache.values[first];
+        }
+        if (cache.generations[second] == cache.generation && cache.keys[second] == key) {
+            return cache.values[second];
         }
         return null;
     }
@@ -28,10 +32,21 @@ public final class ChunkRegionStateCache {
         Cache cache = LOCAL.get();
         cache.useRegion(region);
         long key = pos.asLong();
-        int slot = mix(key) & (Cache.SIZE - 1);
-        cache.keys[slot] = key;
-        cache.values[slot] = state;
-        cache.generations[slot] = cache.generation;
+        int set = mix(key) & (Cache.SET_COUNT - 1);
+        int first = set;
+        int second = set + Cache.SET_COUNT;
+        int target;
+        if (cache.generations[first] == cache.generation && cache.keys[first] == key) {
+            target = first;
+        } else if (cache.generations[second] == cache.generation && cache.keys[second] == key) {
+            target = second;
+        } else {
+            target = cache.replaceSecond[set] ? second : first;
+            cache.replaceSecond[set] = !cache.replaceSecond[set];
+        }
+        cache.keys[target] = key;
+        cache.values[target] = state;
+        cache.generations[target] = cache.generation;
     }
 
     /** Releases the region snapshot as soon as its section build finishes. */
@@ -55,10 +70,11 @@ public final class ChunkRegionStateCache {
     }
 
     private static final class Cache {
-        private static final int SIZE = 4096;
-        private final long[] keys = new long[SIZE];
-        private final BlockState[] values = new BlockState[SIZE];
-        private final int[] generations = new int[SIZE];
+        private static final int SET_COUNT = 2048;
+        private final long[] keys = new long[SET_COUNT * 2];
+        private final BlockState[] values = new BlockState[SET_COUNT * 2];
+        private final int[] generations = new int[SET_COUNT * 2];
+        private final boolean[] replaceSecond = new boolean[SET_COUNT];
         private ChunkRendererRegion region;
         private int generation = 1;
 
