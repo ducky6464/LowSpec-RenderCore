@@ -14,8 +14,6 @@
     "ChunkBuilderUploadPacingMixin",
     "SectionBuilderMetricsMixin",
     "ChunkRendererRegionStateCacheMixin",
-    "ChunkRendererRegionInvoker",
-    "RenderedChunkAccessor",
     "ChunkRenderDataGpuPoolMixin",
     "BuffersGpuPoolMixin",
     "ChunkLightProviderStateCacheMixin",
