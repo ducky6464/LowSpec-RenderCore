@@ -2,7 +2,7 @@ package dev.lowspec.rendercore.mixin;
 
 import dev.lowspec.rendercore.ChunkMeshMetrics;
 import dev.lowspec.rendercore.ChunkRegionStateCache;
-import dev.lowspec.rendercore.EmptySectionFastPath;
+import net.minecraft.client.render.chunk.EmptySectionFastPath;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
