@@ -137,7 +137,7 @@ public final class RenderCoreConfigScreen extends Screen {
         }).dimensions(center - 145, emptyFastPathY, 140, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
-                .dimensions(center - 100, this.height - 30, 200, 20).build());
+                .dimensions(center - 100, this.height - 22, 200, 20).build());
     }
 
     @Override
