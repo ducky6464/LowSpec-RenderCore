@@ -149,8 +149,19 @@ public abstract class SectionBuilderMetricsMixin {
                         if (state.getRenderType() == BlockRenderType.MODEL) {
                             BlockRenderLayer blockLayer = BlockRenderLayers.getBlockLayer(state);
                             BufferBuilder blockBuffer = lowspec$bufferFor(builders, allocatorStorage, blockLayer);
-                            random.setSeed(state.getRenderingSeed(pos));
-                            blockRenderManager.getModel(state).addParts(random, modelParts);
+                            long renderingSeed = state.getRenderingSeed(pos);
+                            if (LowSpecRenderCoreClient.CONFIG != null
+                                    && LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled
+                                    && scratch.addCachedModelParts(state, renderingSeed, modelParts)) {
+                                // Cached deterministic model variant selected for this block state and position seed.
+                            } else {
+                                random.setSeed(renderingSeed);
+                                blockRenderManager.getModel(state).addParts(random, modelParts);
+                                if (LowSpecRenderCoreClient.CONFIG != null
+                                        && LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled) {
+                                    scratch.cacheModelParts(state, renderingSeed, modelParts);
+                                }
+                            }
                             matrices.push();
                             matrices.translate(localX, localY, localZ);
                             blockRenderManager.renderBlock(state, pos, region, matrices, blockBuffer, true, modelParts);
@@ -219,5 +230,34 @@ public abstract class SectionBuilderMetricsMixin {
         private final ObjectArrayList<BlockModelPart> modelParts = new ObjectArrayList<>();
         private final Random random = Random.create();
         private final BlockPos.Mutable pos = new BlockPos.Mutable();
+        private static final int MODEL_CACHE_SIZE = 256;
+        private final BlockState[] cachedModelStates = new BlockState[MODEL_CACHE_SIZE];
+        private final long[] cachedModelSeeds = new long[MODEL_CACHE_SIZE];
+        private final BlockModelPart[][] cachedModelParts = new BlockModelPart[MODEL_CACHE_SIZE][];
+
+        private boolean addCachedModelParts(BlockState state, long seed, List<BlockModelPart> target) {
+            int slot = modelCacheIndex(state, seed);
+            BlockModelPart[] parts = cachedModelParts[slot];
+            if (parts == null || cachedModelStates[slot] != state || cachedModelSeeds[slot] != seed) {
+                return false;
+            }
+            for (BlockModelPart part : parts) target.add(part);
+            return true;
+        }
+
+        private void cacheModelParts(BlockState state, long seed, List<BlockModelPart> parts) {
+            int slot = modelCacheIndex(state, seed);
+            cachedModelStates[slot] = state;
+            cachedModelSeeds[slot] = seed;
+            cachedModelParts[slot] = parts.toArray(new BlockModelPart[0]);
+        }
+
+        private static int modelCacheIndex(BlockState state, long seed) {
+            long value = seed ^ (long) System.identityHashCode(state) * 0x9E3779B97F4A7C15L;
+            value ^= value >>> 33;
+            value *= 0xff51afd7ed558ccdL;
+            value ^= value >>> 33;
+            return (int) value & (MODEL_CACHE_SIZE - 1);
+        }
     }
 }
