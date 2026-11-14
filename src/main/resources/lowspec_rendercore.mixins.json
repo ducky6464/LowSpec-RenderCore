@@ -1,21 +1,21 @@
 {
   "required": true,
-  "package": "dev.lowspec.rendercore.mixin",
+  "package": "",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "LightingProviderMixin",
-    "EntityRenderManagerMixin",
-    "GameRendererMetricsMixin",
-    "ParticleManagerMixin",
-    "BlockEntityRenderManagerMixin",
-    "WorldRendererChunkMetricsMixin",
-    "WorldRendererChunkSchedulerMixin",
-    "WorldRendererInvoker",
-    "ChunkBuilderUploadPacingMixin",
-    "SectionBuilderMetricsMixin",
-    "ChunkRendererRegionStateCacheMixin",
-    "ChunkRendererRegionInvoker",
-    "RenderedChunkAccessor"
+    "dev.lowspec.rendercore.mixin.LightingProviderMixin",
+    "dev.lowspec.rendercore.mixin.EntityRenderManagerMixin",
+    "dev.lowspec.rendercore.mixin.GameRendererMetricsMixin",
+    "dev.lowspec.rendercore.mixin.ParticleManagerMixin",
+    "dev.lowspec.rendercore.mixin.BlockEntityRenderManagerMixin",
+    "dev.lowspec.rendercore.mixin.WorldRendererChunkMetricsMixin",
+    "dev.lowspec.rendercore.mixin.WorldRendererChunkSchedulerMixin",
+    "dev.lowspec.rendercore.mixin.WorldRendererInvoker",
+    "dev.lowspec.rendercore.mixin.ChunkBuilderUploadPacingMixin",
+    "dev.lowspec.rendercore.mixin.SectionBuilderMetricsMixin",
+    "dev.lowspec.rendercore.mixin.ChunkRendererRegionStateCacheMixin",
+    "net.minecraft.client.render.chunk.ChunkRendererRegionInvoker",
+    "net.minecraft.client.render.chunk.RenderedChunkAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
