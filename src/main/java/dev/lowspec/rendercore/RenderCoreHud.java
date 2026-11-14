@@ -18,8 +18,6 @@ public final class RenderCoreHud {
                     || client.player == null || client.world == null) return;
 
             RenderFrameMetrics.Snapshot frame = RenderFrameMetrics.snapshot();
-            LightingMetrics.Snapshot light = LightingMetrics.snapshot();
-            ChunkUpdateMetrics.Snapshot chunks = ChunkUpdateMetrics.snapshot();
             ChunkBuilder builder = client.worldRenderer.getChunkBuilder();
             int x = 6;
             int y = 6;
@@ -31,19 +29,31 @@ public final class RenderCoreHud {
             context.drawTextWithShadow(client.textRenderer,
                     Text.literal(String.format(java.util.Locale.ROOT, "CPU render: %.2f avg / %.2f p95 ms", frame.averageRenderMillis(), frame.p95RenderMillis())),
                     x, y + 22, color);
+
+            String lightingText = "Lighting timing: disabled";
+            if (config.lightingDiagnosticsEnabled) {
+                LightingMetrics.Snapshot light = LightingMetrics.snapshot();
+                lightingText = String.format(java.util.Locale.ROOT, "Lighting: %.3f ms/call", light.averageMillisPerCall());
+            }
+            context.drawTextWithShadow(client.textRenderer, Text.literal(lightingText), x, y + 33, color);
+
+            if (config.chunkDiagnosticsEnabled) {
+                ChunkUpdateMetrics.Snapshot chunks = ChunkUpdateMetrics.snapshot();
+                context.drawTextWithShadow(client.textRenderer,
+                        Text.literal(String.format(java.util.Locale.ROOT, "Chunk update: %.3f avg / %.3f p95 ms", chunks.averageMillis(), chunks.p95Millis())),
+                        x, y + 44, color);
+                context.drawTextWithShadow(client.textRenderer,
+                        Text.literal("Chunk tasks: " + builder.getScheduledTaskCount()
+                                + " | uploads: " + builder.getChunksToUpload()
+                                + " | free buffers: " + builder.getFreeBufferCount()),
+                        x, y + 55, color);
+            } else {
+                context.drawTextWithShadow(client.textRenderer, Text.literal("Chunk diagnostics: disabled"), x, y + 44, color);
+            }
+
             context.drawTextWithShadow(client.textRenderer,
-                    Text.literal(String.format(java.util.Locale.ROOT, "Lighting: %.3f ms/call", light.averageMillisPerCall())),
-                    x, y + 33, color);
-            context.drawTextWithShadow(client.textRenderer,
-                    Text.literal(String.format(java.util.Locale.ROOT, "Chunk update: %.3f avg / %.3f p95 ms", chunks.averageMillis(), chunks.p95Millis())),
-                    x, y + 44, color);
-            context.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Chunk tasks: " + builder.getScheduledTaskCount()
-                            + " | uploads: " + builder.getChunksToUpload()
-                            + " | free buffers: " + builder.getFreeBufferCount()),
-                    x, y + 55, color);
-            context.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Particles admitted: " + ParticleBudget.getAdmittedThisTick()),
+                    Text.literal("Particles admitted: " + (config.particleBudgetEnabled
+                            ? ParticleBudget.getAdmittedThisTick() : "limiter off")),
                     x, y + 66, color);
         });
     }
