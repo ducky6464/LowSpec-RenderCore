@@ -109,9 +109,15 @@ public final class RenderCoreConfigScreen extends Screen {
             LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled = !LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled;
             saveConfig();
             button.setMessage(chunkUploadText());
-        }).dimensions(center - 145, uploadY, 140, 20).build());
+        }).dimensions(center - 145, uploadY, 90, 20).build());
+        addDrawableChild(ButtonWidget.builder(lightingPacingText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled =
+                    !LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled;
+            saveConfig();
+            button.setMessage(lightingPacingText());
+        }).dimensions(center - 50, uploadY, 90, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustChunkUploads(-1))
-                .dimensions(center + 5, uploadY, 28, 20).build());
+                .dimensions(center + 45, uploadY, 28, 20).build());
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkUploads(1))
                 .dimensions(center + 112, uploadY, 28, 20).build());
 
@@ -209,6 +215,10 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private Text chunkUploadText() {
         return Text.literal("Upload pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled ? "ON" : "OFF"));
+    }
+
+    private Text lightingPacingText() {
+        return Text.literal("Lighting pacing: " + (LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled ? "ON" : "OFF"));
     }
 
     private Text hudText() {
