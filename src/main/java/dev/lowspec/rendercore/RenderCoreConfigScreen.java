@@ -86,6 +86,12 @@ public final class RenderCoreConfigScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustBlockEntityDistance(16))
                 .dimensions(center + 112, blockEntityY, 28, 20).build());
 
+        addDrawableChild(ButtonWidget.builder(hudText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.performanceHudEnabled = !LowSpecRenderCoreClient.CONFIG.performanceHudEnabled;
+            saveConfig();
+            button.setMessage(hudText());
+        }).dimensions(center - 145, blockEntityY + 25, 140, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 30, 200, 20).build());
     }
@@ -154,6 +160,10 @@ public final class RenderCoreConfigScreen extends Screen {
         RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
         c.blockEntityRenderDistance = Math.max(16, Math.min(256, c.blockEntityRenderDistance + amount));
         saveConfig();
+    }
+
+    private Text hudText() {
+        return Text.literal("Performance HUD: " + (LowSpecRenderCoreClient.CONFIG.performanceHudEnabled ? "ON" : "OFF"));
     }
 
     private Text blockEntityText() {
