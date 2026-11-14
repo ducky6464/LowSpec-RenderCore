@@ -1,27 +1,36 @@
 package dev.lowspec.rendercore;
 
-/** Low-allocation entity extraction and render submission measurements. */
+/** Low-allocation entity extraction and render-command enqueue measurements. */
 public final class EntityRenderMetrics {
     private static final int WINDOW = 120;
     private static final long[] extractionNanos = new long[WINDOW];
-    private static final long[] renderNanos = new long[WINDOW];
+    private static final long[] enqueueNanos = new long[WINDOW];
     private static int cursor;
     private static int samples;
     private static long frameExtractions;
-    private static long frameRenders;
+    private static long frameEnqueues;
     private static long framePlayerExtractions;
-    private static long framePlayerRenders;
+    private static long framePlayerEnqueues;
     private static long frameExtractionNanos;
-    private static long frameRenderNanos;
+    private static long frameEnqueueNanos;
+    private static long lastExtractions;
+    private static long lastEnqueues;
+    private static long lastPlayerExtractions;
+    private static long lastPlayerEnqueues;
     private static long totalExtractions;
-    private static long totalRenders;
+    private static long totalEnqueues;
     private static long totalPlayerExtractions;
-    private static long totalPlayerRenders;
+    private static long totalPlayerEnqueues;
 
     private EntityRenderMetrics() { }
 
-    public static long beginExtraction() { return System.nanoTime(); }
-    public static long beginRender() { return System.nanoTime(); }
+    private static boolean enabled() {
+        return LowSpecRenderCoreClient.CONFIG != null
+                && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled;
+    }
+
+    public static long beginExtraction() { return enabled() ? System.nanoTime() : 0L; }
+    public static long beginEnqueue() { return enabled() ? System.nanoTime() : 0L; }
 
     public static void endExtraction(long startNanos, boolean player) {
         if (startNanos == 0L) return;
@@ -35,45 +44,49 @@ public final class EntityRenderMetrics {
         }
     }
 
-    public static void endRender(long startNanos, boolean player) {
+    public static void endEnqueue(long startNanos, boolean player) {
         if (startNanos == 0L) return;
         long elapsed = Math.max(0L, System.nanoTime() - startNanos);
-        frameRenders++;
-        totalRenders++;
-        frameRenderNanos += elapsed;
+        frameEnqueues++;
+        totalEnqueues++;
+        frameEnqueueNanos += elapsed;
         if (player) {
-            framePlayerRenders++;
-            totalPlayerRenders++;
+            framePlayerEnqueues++;
+            totalPlayerEnqueues++;
         }
     }
 
     public static void finishFrame() {
         extractionNanos[cursor] = frameExtractionNanos;
-        renderNanos[cursor] = frameRenderNanos;
+        enqueueNanos[cursor] = frameEnqueueNanos;
         cursor = (cursor + 1) % WINDOW;
         if (samples < WINDOW) samples++;
-        frameExtractions = frameRenders = 0L;
-        framePlayerExtractions = framePlayerRenders = 0L;
-        frameExtractionNanos = frameRenderNanos = 0L;
+        lastExtractions = frameExtractions;
+        lastEnqueues = frameEnqueues;
+        lastPlayerExtractions = framePlayerExtractions;
+        lastPlayerEnqueues = framePlayerEnqueues;
+        frameExtractions = frameEnqueues = 0L;
+        framePlayerExtractions = framePlayerEnqueues = 0L;
+        frameExtractionNanos = frameEnqueueNanos = 0L;
     }
 
     public static Snapshot snapshot() {
         long extraction = 0L;
-        long render = 0L;
+        long enqueue = 0L;
         for (int i = 0; i < samples; i++) {
             extraction += extractionNanos[i];
-            render += renderNanos[i];
+            enqueue += enqueueNanos[i];
         }
-        return new Snapshot(samples, frameExtractions, frameRenders,
-                framePlayerExtractions, framePlayerRenders,
+        return new Snapshot(samples, lastExtractions, lastEnqueues,
+                lastPlayerExtractions, lastPlayerEnqueues,
                 samples == 0 ? 0.0 : extraction / (double) samples / 1_000_000.0,
-                samples == 0 ? 0.0 : render / (double) samples / 1_000_000.0,
-                totalExtractions, totalRenders, totalPlayerExtractions, totalPlayerRenders);
+                samples == 0 ? 0.0 : enqueue / (double) samples / 1_000_000.0,
+                totalExtractions, totalEnqueues, totalPlayerExtractions, totalPlayerEnqueues);
     }
 
-    public record Snapshot(int samples, long extractionsThisFrame, long rendersThisFrame,
-                           long playerExtractionsThisFrame, long playerRendersThisFrame,
-                           double averageExtractionMillisPerFrame, double averageRenderMillisPerFrame,
-                           long totalExtractions, long totalRenders,
-                           long totalPlayerExtractions, long totalPlayerRenders) { }
+    public record Snapshot(int samples, long extractionsLastFrame, long enqueuesLastFrame,
+                           long playerExtractionsLastFrame, long playerEnqueuesLastFrame,
+                           double averageExtractionMillisPerFrame, double averageEnqueueMillisPerFrame,
+                           long totalExtractions, long totalEnqueues,
+                           long totalPlayerExtractions, long totalPlayerEnqueues) { }
 }
