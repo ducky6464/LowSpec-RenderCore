@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SectionBuilder.class)
 public abstract class SectionBuilderMetricsMixin {
-    @Unique private long lowspec$meshBuildStartNanos;
+    @Unique private final ThreadLocal<Long> lowspec$meshBuildStartNanos = ThreadLocal.withInitial(() -> 0L);
 
     @Inject(
             method = "build(Lnet/minecraft/util/math/ChunkSectionPos;Lnet/minecraft/client/render/chunk/ChunkRendererRegion;Lcom/mojang/blaze3d/systems/VertexSorter;Lnet/minecraft/client/render/chunk/BlockBufferAllocatorStorage;)Lnet/minecraft/client/render/chunk/SectionBuilder$RenderData;",
@@ -24,8 +24,8 @@ public abstract class SectionBuilderMetricsMixin {
     private void lowspec$beginMeshBuild(ChunkSectionPos sectionPos, ChunkRendererRegion region,
                                         VertexSorter sorter, BlockBufferAllocatorStorage storage,
                                         CallbackInfoReturnable<SectionBuilder.RenderData> cir) {
-        lowspec$meshBuildStartNanos = LowSpecRenderCoreClient.CONFIG != null
-                && LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled ? System.nanoTime() : 0L;
+        lowspec$meshBuildStartNanos.set(LowSpecRenderCoreClient.CONFIG != null
+                && LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled ? System.nanoTime() : 0L);
     }
 
     @Inject(
@@ -35,10 +35,10 @@ public abstract class SectionBuilderMetricsMixin {
     private void lowspec$finishMeshBuild(ChunkSectionPos sectionPos, ChunkRendererRegion region,
                                          VertexSorter sorter, BlockBufferAllocatorStorage storage,
                                          CallbackInfoReturnable<SectionBuilder.RenderData> cir) {
-        long start = lowspec$meshBuildStartNanos;
+        long start = lowspec$meshBuildStartNanos.get();
         if (start != 0L) {
             ChunkMeshMetrics.record(System.nanoTime() - start);
-            lowspec$meshBuildStartNanos = 0L;
+            lowspec$meshBuildStartNanos.remove();
         }
     }
 }
