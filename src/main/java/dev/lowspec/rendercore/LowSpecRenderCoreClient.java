@@ -25,6 +25,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
+        RenderCoreHud.register();
         ClientTickEvents.START_CLIENT_TICK.register(client -> tickStartNanos = System.nanoTime());
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             ParticleBudget.resetForNewTick();
