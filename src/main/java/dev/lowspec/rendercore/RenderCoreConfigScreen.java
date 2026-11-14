@@ -129,12 +129,6 @@ public final class RenderCoreConfigScreen extends Screen {
                 .dimensions(center + 112, uploadY, 28, 20).build());
 
         int emptyFastPathY = uploadY + 25;
-        addDrawableChild(ButtonWidget.builder(emptySectionFastPathText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled;
-            saveConfig();
-            button.setMessage(emptySectionFastPathText());
-        }).dimensions(center - 145, emptyFastPathY, 68, 20).build());
         addDrawableChild(ButtonWidget.builder(gpuBufferPoolText(), button -> {
             LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled =
                     !LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled;
@@ -262,10 +256,6 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private Text lightingPacingText() {
         return Text.literal("Lighting pacing: " + (LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled ? "ON" : "OFF"));
-    }
-
-    private Text emptySectionFastPathText() {
-        return Text.literal("Empty: " + (LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled ? "ON" : "OFF"));
     }
 
     private Text gpuBufferPoolText() {
