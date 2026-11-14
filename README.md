@@ -43,7 +43,7 @@ The lighting and chunk instrumentation only measure vanilla work. Chunk update t
 
 Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
-- Deeper chunk mesh-generation and GPU upload optimization. The current scheduler only paces and coalesces rebuild requests; it does not rewrite vanilla mesh generation.
+- Deeper chunk mesh-generation optimization and custom GPU buffer management. The mod now paces vanilla's completed chunk upload tasks, but it does not rewrite vanilla mesh generation or replace Minecraft's GPU buffer backend.
 - Actual GPU time, display-present frame time, and GPU metrics.
 - In-game compatibility and performance testing across hardware.
 
@@ -82,4 +82,4 @@ Requires Java 21. Run `gradle build`, or use the GitHub Actions workflow. A succ
 
 ## Low-spec CPU and rendering overhead
 
-Diagnostics are disabled by default to avoid continuous timing overhead. Entity, block-entity, and particle workload limits remain player-configurable. The chunk request scheduler uses thread-local replay state and invokes vanilla scheduling outside its queue lock; failed replay requests are returned to the queue rather than silently discarded. These changes reduce avoidable CPU overhead and submitted rendering work, but they do not replace or rewrite Minecraft's mesh-generation or GPU backend.
+Diagnostics are disabled by default to avoid continuous timing overhead. Entity, block-entity, and particle workload limits remain player-configurable. The chunk request scheduler uses thread-local replay state and invokes vanilla scheduling outside its queue lock; failed replay requests are returned to the queue rather than silently discarded. Completed chunk uploads are limited per render frame to spread GPU upload submission work over time. These changes smooth workload bursts but may delay chunk appearance at low limits; they do not replace or rewrite Minecraft's mesh-generation or GPU backend.
