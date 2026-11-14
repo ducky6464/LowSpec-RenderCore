@@ -8,7 +8,9 @@
     "GameRendererMetricsMixin",
     "ParticleManagerMixin",
     "BlockEntityRenderManagerMixin",
-    "WorldRendererChunkMetricsMixin"
+    "WorldRendererChunkMetricsMixin",
+    "WorldRendererChunkSchedulerMixin",
+    "WorldRendererInvoker"
   ],
   "injectors": {
     "defaultRequire": 1
