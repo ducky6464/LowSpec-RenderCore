@@ -12,7 +12,7 @@ Implemented:
 - Optional Mod Menu 17.0.1 integration for Minecraft 1.21.11, with a graphical settings screen. Mod Menu remains optional; the mod does not force it as a dependency.
 - Basic average client tick-time measurement.
 - In-game `/rendercore stats` command showing measured tick, CPU-side render duration average/p95, and lighting timings.
-- Rolling 120-sample CPU-side `GameRenderer.render()` timing; explicitly not presented as GPU or display-present time.
+- Rolling 120-sample CPU-side `GameRenderer.render()` timing with a fixed histogram for low-allocation percentile reporting; explicitly not presented as GPU or display-present time.
 - In-game `/rendercore culling on` and `/rendercore culling off` commands that save the setting automatically.
 - Graphical settings screen accessible from the LowSpec RenderCore config button in Mod Menu, including entity distance +/- controls and diagnostics toggles.
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
