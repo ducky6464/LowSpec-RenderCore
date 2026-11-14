@@ -27,11 +27,14 @@ public abstract class BlockEntityRenderManagerMixin {
         if (config == null || !config.blockEntityDistanceCullingEnabled) return;
         if (blockEntity instanceof BeaconBlockEntity) return;
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null) return;
-        double x = blockEntity.getPos().getX() + 0.5;
-        double y = blockEntity.getPos().getY() + 0.5;
-        double z = blockEntity.getPos().getZ() + 0.5;
-        if (client.player.squaredDistanceTo(x, y, z)
+        if (client.player == null || client.gameRenderer == null) return;
+        // Use the active camera, not the player entity: spectator/free-camera views
+        // must cull relative to what is actually being rendered.
+        var cameraPos = client.gameRenderer.getCamera().getPos();
+        double dx = blockEntity.getPos().getX() + 0.5 - cameraPos.getX();
+        double dy = blockEntity.getPos().getY() + 0.5 - cameraPos.getY();
+        double dz = blockEntity.getPos().getZ() + 0.5 - cameraPos.getZ();
+        if (dx * dx + dy * dy + dz * dz
                 > (double) config.blockEntityRenderDistance * config.blockEntityRenderDistance) {
             cir.setReturnValue(null);
         }
