@@ -22,11 +22,6 @@ public abstract class ChunkLightProviderStateCacheMixin {
         LightingStateCache.endPass();
     }
 
-    @Inject(method = "doLightUpdates()I", at = @At("THROW"))
-    private void lowspec$abortLightingCachePass(CallbackInfoReturnable<Integer> cir) {
-        LightingStateCache.endPass();
-    }
-
     @Inject(
             method = "getStateForLighting(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/block/BlockState;",
             at = @At("HEAD"),
