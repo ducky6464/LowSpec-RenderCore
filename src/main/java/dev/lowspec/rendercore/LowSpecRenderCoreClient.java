@@ -78,6 +78,9 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + String.format(java.util.Locale.ROOT, "%.3f ms", light.averageMillisPerCall())
                                             + " | Vanilla updates reported: " + light.reportedUpdates()));
                             context.getSource().sendFeedback(Text.literal(
+                                    "Lighting pacing: " + (CONFIG.lightingUpdatePacingEnabled ? "ON" : "OFF")
+                                            + " | Defers after 40 ms; forces a full pass after two deferrals"));
+                            context.getSource().sendFeedback(Text.literal(
                                     "Chunk update CPU time: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg / %.3f ms p95", chunks.averageMillis(), chunks.p95Millis())
                                             + " | Samples: " + chunks.samples()));
