@@ -60,7 +60,7 @@ Proposed modules:
 
 5. **Parallel Preparation**
    - Move only immutable or safely snapshotted preparation data to workers.
-   - Begin conservatively: two helper workers maximum by default on this 2-core/4-thread device, with configuration and profiling.
+   - Begin conservatively: one helper worker by default on this 2-core/4-thread device; test a second worker only if profiling proves it helps rather than competing with Minecraft's main/render work.
    - Keep all GPU resource creation, upload, and submission on the render thread unless Minecraft explicitly supports another route.
    - Preserve ordering for sounds, particles, world mutation, and other side effects. Particle optimization itself is out of scope.
 
