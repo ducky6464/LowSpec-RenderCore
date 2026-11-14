@@ -21,7 +21,9 @@ public abstract class ChunkRendererRegionStateCacheMixin {
     private void lowspec$lookupCachedBlockState(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
         if (LowSpecRenderCoreClient.CONFIG == null
                 || !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) return;
-        BlockState cached = ChunkRegionStateCache.lookup((ChunkRendererRegion) (Object) this, pos);
+        ChunkRendererRegion region = (ChunkRendererRegion) (Object) this;
+        BlockState cached = ChunkRegionStateCache.lookupInSection(region, pos);
+        if (cached == null) cached = ChunkRegionStateCache.lookup(region, pos);
         if (cached != null) cir.setReturnValue(cached);
     }
 
@@ -32,8 +34,14 @@ public abstract class ChunkRendererRegionStateCacheMixin {
     private void lowspec$storeBlockState(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
         if (LowSpecRenderCoreClient.CONFIG == null
                 || !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) return;
-        ChunkRegionStateCache.store((ChunkRendererRegion) (Object) this, pos, cir.getReturnValue());
+        ChunkRendererRegion region = (ChunkRendererRegion) (Object) this;
+        if (ChunkRegionStateCache.isInActiveSection(region, pos)) {
+            ChunkRegionStateCache.storeInSection(region, pos, cir.getReturnValue());
+        } else {
+            ChunkRegionStateCache.store(region, pos, cir.getReturnValue());
+        }
     }
+
     @Inject(
             method = "getFluidState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/fluid/FluidState;",
             at = @At("HEAD"),
@@ -42,8 +50,9 @@ public abstract class ChunkRendererRegionStateCacheMixin {
     private void lowspec$lookupCachedFluidState(BlockPos pos, CallbackInfoReturnable<FluidState> cir) {
         if (LowSpecRenderCoreClient.CONFIG == null
                 || !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) return;
-        BlockState cached = ChunkRegionStateCache.lookup((ChunkRendererRegion) (Object) this, pos);
+        ChunkRendererRegion region = (ChunkRendererRegion) (Object) this;
+        BlockState cached = ChunkRegionStateCache.lookupInSection(region, pos);
+        if (cached == null) cached = ChunkRegionStateCache.lookup(region, pos);
         if (cached != null) cir.setReturnValue(cached.getFluidState());
     }
-
 }
