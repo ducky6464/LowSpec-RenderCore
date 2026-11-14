@@ -52,9 +52,13 @@ public final class RenderCoreHud {
             }
 
             context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("Chunk upload cap: " + ChunkUploadBudget.getLastEffectiveLimit()
+                            + " / frame (adaptive)"),
+                    x, y + 66, color);
+            context.drawTextWithShadow(client.textRenderer,
                     Text.literal("Particles admitted: " + (config.particleBudgetEnabled
                             ? ParticleBudget.getAdmittedThisTick() : "limiter off")),
-                    x, y + 66, color);
+                    x, y + 77, color);
         });
     }
 }
