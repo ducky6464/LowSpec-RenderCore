@@ -77,6 +77,11 @@ public final class RenderCoreHud {
                     Text.literal("Lighting cache: " + (config.lightingStateCacheEnabled ? "ON" : "OFF")
                             + " | " + String.format(java.util.Locale.ROOT, "%.1f%% hits", lightCache.hitRatePercent())),
                     x, y + 121, color);
+            LightingShapeCache.Snapshot shapeCache = LightingShapeCache.snapshot();
+            context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("Lighting shapes: " + (config.lightingShapeCacheEnabled ? "ON" : "OFF")
+                            + " | " + String.format(java.util.Locale.ROOT, "%.1f%% hits", shapeCache.hitRatePercent())),
+                    x, y + 132, color);
         });
     }
 }
