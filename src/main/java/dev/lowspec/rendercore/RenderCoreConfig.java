@@ -15,6 +15,8 @@ public final class RenderCoreConfig {
     public boolean chunkDiagnosticsEnabled = false;
     public boolean chunkSchedulingEnabled = true;
     public int chunkRebuildsPerTick = 128;
+    public boolean chunkUploadPacingEnabled = true;
+    public int chunkUploadsPerFrame = 8;
     public boolean entityDistanceCullingEnabled = true;
     public boolean particleBudgetEnabled = true;
     public int maxParticlesPerTick = 400;
@@ -45,6 +47,8 @@ public final class RenderCoreConfig {
             config.chunkDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.chunks", "false"));
             config.chunkSchedulingEnabled = Boolean.parseBoolean(p.getProperty("chunks.scheduler_enabled", "true"));
             config.chunkRebuildsPerTick = bounded(p.getProperty("chunks.rebuilds_per_tick", "128"), 128, 16, 512);
+            config.chunkUploadPacingEnabled = Boolean.parseBoolean(p.getProperty("chunks.upload_pacing_enabled", "true"));
+            config.chunkUploadsPerFrame = bounded(p.getProperty("chunks.uploads_per_frame", "8"), 8, 1, 64);
             config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "true"));
             config.particleBudgetEnabled = Boolean.parseBoolean(p.getProperty("particles.budget_enabled", "true"));
             config.maxParticlesPerTick = bounded(p.getProperty("particles.max_per_tick", "400"), 400, 50, 2000);
@@ -71,6 +75,8 @@ public final class RenderCoreConfig {
         p.setProperty("diagnostics.chunks", Boolean.toString(chunkDiagnosticsEnabled));
         p.setProperty("chunks.scheduler_enabled", Boolean.toString(chunkSchedulingEnabled));
         p.setProperty("chunks.rebuilds_per_tick", Integer.toString(chunkRebuildsPerTick));
+        p.setProperty("chunks.upload_pacing_enabled", Boolean.toString(chunkUploadPacingEnabled));
+        p.setProperty("chunks.uploads_per_frame", Integer.toString(chunkUploadsPerFrame));
         p.setProperty("render.entity_distance_culling", Boolean.toString(entityDistanceCullingEnabled));
         p.setProperty("particles.budget_enabled", Boolean.toString(particleBudgetEnabled));
         p.setProperty("particles.max_per_tick", Integer.toString(maxParticlesPerTick));
