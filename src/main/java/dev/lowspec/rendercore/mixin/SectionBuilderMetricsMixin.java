@@ -21,7 +21,6 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.BlockBufferAllocatorStorage;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
-import dev.lowspec.rendercore.EmptySectionFastPath;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.client.render.model.BlockModelPart;
 import net.minecraft.client.util.BufferAllocator;
@@ -75,18 +74,6 @@ public abstract class SectionBuilderMetricsMixin {
                 && LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) {
             ChunkRegionStateCache.beginSection(region,
                     sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ());
-        }
-
-        if (LowSpecRenderCoreClient.CONFIG != null
-                && LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled) {
-            SectionBuilder.RenderData empty = EmptySectionFastPath.tryBuildEmpty(sectionPos, region);
-            if (empty != null) {
-                if (start != 0L) ChunkMeshMetrics.record(System.nanoTime() - start);
-                lowspec$meshBuildStartNanos.remove();
-                ChunkRegionStateCache.clear(region);
-                cir.setReturnValue(empty);
-                return;
-            }
         }
 
         // For non-empty sections, use the custom low-allocation mesh build.
