@@ -22,14 +22,22 @@ public final class ChunkGpuBufferPool {
     private static long pooledBytes;
     private static long reuseHits;
     private static long allocationMisses;
+    private static GpuDevice pooledDevice;
 
     private ChunkGpuBufferPool() { }
 
     public static GpuBuffer createOrReuse(GpuDevice device, Supplier<String> label, int usage, ByteBuffer source) {
-        if (!enabled() || !RenderSystem.isOnRenderThread()) {
+        if (!RenderSystem.isOnRenderThread()) {
             allocationMisses++;
             return device.createBuffer(label, usage, source);
         }
+        if (!enabled()) {
+            clear();
+            allocationMisses++;
+            return device.createBuffer(label, usage, source);
+        }
+        if (pooledDevice != null && pooledDevice != device) clear();
+        pooledDevice = device;
 
         ByteBuffer data = source.duplicate();
         int requiredBytes = data.remaining();
@@ -53,7 +61,9 @@ public final class ChunkGpuBufferPool {
 
     public static void release(GpuBuffer buffer) {
         if (buffer == null || buffer.isClosed()) return;
-        if (!enabled() || !RenderSystem.isOnRenderThread()
+        GpuDevice currentDevice = RenderSystem.tryGetDevice();
+        if (!enabled() || !RenderSystem.isOnRenderThread() || currentDevice == null
+                || (pooledDevice != null && pooledDevice != currentDevice)
                 || (buffer.usage() & GpuBuffer.USAGE_COPY_DST) == 0
                 || buffer.size() <= 0L || buffer.size() > MAX_RETAINED_BUFFER_BYTES
                 || AVAILABLE.size() >= MAX_ENTRIES
@@ -61,6 +71,7 @@ public final class ChunkGpuBufferPool {
             buffer.close();
             return;
         }
+        pooledDevice = currentDevice;
         AVAILABLE.addLast(buffer);
         pooledBytes += buffer.size();
     }
@@ -96,6 +107,7 @@ public final class ChunkGpuBufferPool {
         }
         AVAILABLE.clear();
         pooledBytes = 0L;
+        pooledDevice = null;
     }
 
     public static long getReuseHits() { return reuseHits; }
