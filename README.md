@@ -78,3 +78,8 @@ Requires Java 21. Run `gradle build`, or use the GitHub Actions workflow. A succ
 3. **Chunk renderer:** investigate rebuild scheduling, mesh generation, face/occlusion culling, and draw-call costs.
 4. **Entity distance:** expand categories and validate behavior in-game.
 5. **UI and benchmarks:** settings screen, diagnostics overlay, frame-time percentiles, and reproducible tests.
+
+
+## Low-spec CPU and rendering overhead
+
+Diagnostics are disabled by default to avoid continuous timing overhead. Entity, block-entity, and particle workload limits remain player-configurable. The chunk request scheduler uses thread-local replay state and invokes vanilla scheduling outside its queue lock; failed replay requests are returned to the queue rather than silently discarded. These changes reduce avoidable CPU overhead and submitted rendering work, but they do not replace or rewrite Minecraft's mesh-generation or GPU backend.
