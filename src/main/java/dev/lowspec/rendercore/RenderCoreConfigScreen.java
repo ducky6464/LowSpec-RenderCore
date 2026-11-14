@@ -25,8 +25,7 @@ public final class RenderCoreConfigScreen extends Screen {
     protected void init() {
         int center = width / 2;
         int titleWidth = textRenderer.getWidth(title);
-        addDrawableChild(new TextWidget(center - titleWidth / 2, 18, titleWidth, 16, title, textRenderer)
-                .setTextColor(0xFFFFFF));
+        addDrawableChild(new TextWidget(center - titleWidth / 2, 18, titleWidth, 16, title, textRenderer));
         int tabWidth = Math.min(82, Math.max(60, (width - 20) / PAGES.length));
         int totalWidth = tabWidth * PAGES.length;
         int tabX = center - totalWidth / 2;
@@ -117,8 +116,7 @@ public final class RenderCoreConfigScreen extends Screen {
         int x = width / 2 + 20;
         addRowLabel(label, y, x);
         TextWidget valueWidget = new TextWidget(x + 30, y, 44, 20,
-                Text.literal(Integer.toString(getter.getAsInt())), textRenderer)
-                .setTextColor(0xFFFFFF);
+                Text.literal(Integer.toString(getter.getAsInt())), textRenderer);
         addDrawableChild(ButtonWidget.builder(Text.literal("-"), b -> {
             setter.accept(Math.max(min, getter.getAsInt() - step));
             valueWidget.setMessage(Text.literal(Integer.toString(getter.getAsInt())));
@@ -140,7 +138,7 @@ public final class RenderCoreConfigScreen extends Screen {
         int labelX = Math.max(8, width / 2 - 190);
         int labelWidth = Math.max(80, controlsX - labelX - 14);
         TextWidget labelWidget = new TextWidget(labelX, y + 4, labelWidth, 16,
-                Text.literal(label), textRenderer).setTextColor(0xFFFFFF);
+                Text.literal(label), textRenderer);
         addDrawableChild(labelWidget);
     }
 
