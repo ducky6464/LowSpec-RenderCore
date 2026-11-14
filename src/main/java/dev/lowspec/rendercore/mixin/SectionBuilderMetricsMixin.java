@@ -175,6 +175,9 @@ public abstract class SectionBuilderMetricsMixin {
             renderData.chunkOcclusionData = occlusionBuilder.build();
             return renderData;
         } finally {
+            long start = lowspec$meshBuildStartNanos.get();
+            if (start != 0L) ChunkMeshMetrics.record(System.nanoTime() - start);
+            lowspec$meshBuildStartNanos.remove();
             BlockModelRenderer.disableBrightnessCache();
             builders.clear();
             modelParts.clear();
