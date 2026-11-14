@@ -7,10 +7,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Paces chunk rebuild requests without dropping them. Important rebuilds are
- * drained before ordinary rebuilds. Requests for the same section are coalesced.
- */
+/** Paces and coalesces chunk rebuild requests without intentionally dropping them. */
 public final class ChunkRenderScheduler {
     private static final int MAX_PENDING = 16_384;
     private static final LinkedHashMap<SectionKey, Boolean> IMPORTANT = new LinkedHashMap<>();
@@ -19,6 +16,17 @@ public final class ChunkRenderScheduler {
     private static final ThreadLocal<Boolean> REPLAYING = ThreadLocal.withInitial(() -> false);
 
     private ChunkRenderScheduler() {}
+
+    /** Reduces the rebuild batch when the current client tick is already CPU-heavy. */
+    public static int adaptiveBudget(int configuredBudget, long elapsedTickNanos) {
+        if (configuredBudget <= 16) return Math.max(0, configuredBudget);
+        double elapsedMillis = Math.max(0L, elapsedTickNanos) / 1_000_000.0;
+        if (elapsedMillis <= 20.0) return configuredBudget;
+        if (elapsedMillis >= 40.0) return 16;
+        double ratio = (40.0 - elapsedMillis) / 20.0;
+        return Math.max(16, Math.min(configuredBudget,
+                (int) Math.ceil(16.0 + (configuredBudget - 16.0) * ratio)));
+    }
 
     public static synchronized boolean enqueue(int x, int y, int z, boolean important) {
         SectionKey key = new SectionKey(x, y, z);
@@ -43,12 +51,10 @@ public final class ChunkRenderScheduler {
             }
         }
         if (world == null || budget <= 0) return;
-
         WorldRendererInvoker invoker = (WorldRendererInvoker) renderer;
-        int remaining = budget;
         REPLAYING.set(true);
         try {
-            while (remaining-- > 0) {
+            for (int remaining = budget; remaining > 0; remaining--) {
                 Map.Entry<SectionKey, Boolean> entry = pollNext();
                 if (entry == null) break;
                 SectionKey key = entry.getKey();
@@ -86,10 +92,7 @@ public final class ChunkRenderScheduler {
     }
 
     public static boolean isReplaying() { return REPLAYING.get(); }
-
-    public static synchronized int pendingCount() {
-        return IMPORTANT.size() + NORMAL.size();
-    }
+    public static synchronized int pendingCount() { return IMPORTANT.size() + NORMAL.size(); }
 
     public static synchronized void clear() {
         IMPORTANT.clear();
