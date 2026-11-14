@@ -2,6 +2,7 @@ package dev.lowspec.rendercore;
 
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.chunk.ChunkBuilder;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -18,6 +19,7 @@ public final class RenderCoreHud {
 
             RenderFrameMetrics.Snapshot frame = RenderFrameMetrics.snapshot();
             LightingMetrics.Snapshot light = LightingMetrics.snapshot();
+            ChunkBuilder chunkBuilder = client.worldRenderer.getChunkBuilder();
             int x = 6;
             int y = 6;
             int color = 0xE8E8E8;
