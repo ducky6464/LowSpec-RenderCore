@@ -19,7 +19,8 @@ public final class RenderCoreHud {
 
             RenderFrameMetrics.Snapshot frame = RenderFrameMetrics.snapshot();
             LightingMetrics.Snapshot light = LightingMetrics.snapshot();
-            ChunkBuilder chunkBuilder = client.worldRenderer.getChunkBuilder();
+            ChunkUpdateMetrics.Snapshot chunks = ChunkUpdateMetrics.snapshot();
+            ChunkBuilder builder = client.worldRenderer.getChunkBuilder();
             int x = 6;
             int y = 6;
             int color = 0xE8E8E8;
@@ -28,14 +29,22 @@ public final class RenderCoreHud {
                     Text.literal(String.format(java.util.Locale.ROOT, "Client tick: %.2f ms", LowSpecRenderCoreClient.getAverageClientTickMillis())),
                     x, y + 11, color);
             context.drawTextWithShadow(client.textRenderer,
-                    Text.literal(String.format(java.util.Locale.ROOT, "CPU render: %.2f ms avg / %.2f ms p95", frame.averageRenderMillis(), frame.p95RenderMillis())),
+                    Text.literal(String.format(java.util.Locale.ROOT, "CPU render: %.2f avg / %.2f p95 ms", frame.averageRenderMillis(), frame.p95RenderMillis())),
                     x, y + 22, color);
             context.drawTextWithShadow(client.textRenderer,
                     Text.literal(String.format(java.util.Locale.ROOT, "Lighting: %.3f ms/call", light.averageMillisPerCall())),
                     x, y + 33, color);
             context.drawTextWithShadow(client.textRenderer,
-                    Text.literal("Particles admitted this tick: " + ParticleBudget.getAdmittedThisTick()),
+                    Text.literal(String.format(java.util.Locale.ROOT, "Chunk update: %.3f avg / %.3f p95 ms", chunks.averageMillis(), chunks.p95Millis())),
                     x, y + 44, color);
+            context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("Chunk tasks: " + builder.getScheduledTaskCount()
+                            + " | uploads: " + builder.getChunksToUpload()
+                            + " | free buffers: " + builder.getFreeBufferCount()),
+                    x, y + 55, color);
+            context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("Particles admitted: " + ParticleBudget.getAdmittedThisTick()),
+                    x, y + 66, color);
         });
     }
 }
