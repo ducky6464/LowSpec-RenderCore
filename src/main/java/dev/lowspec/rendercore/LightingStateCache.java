@@ -19,8 +19,15 @@ public final class LightingStateCache {
 
     private LightingStateCache() { }
 
-    public static void beginPass() { LOCAL.get().begin(); }
-    public static void endPass() { LOCAL.get().active = false; }
+    public static void beginPass() {
+        LOCAL.get().begin();
+        LightingShapeCache.beginPass();
+    }
+
+    public static void endPass() {
+        LOCAL.get().active = false;
+        LightingShapeCache.endPass();
+    }
 
     public static BlockState lookup(BlockPos pos) {
         Cache cache = LOCAL.get();
