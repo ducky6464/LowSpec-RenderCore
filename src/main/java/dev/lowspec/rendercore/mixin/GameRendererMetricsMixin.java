@@ -1,6 +1,7 @@
 package dev.lowspec.rendercore.mixin;
 
 import dev.lowspec.rendercore.AdaptiveEntityVisibility;
+import dev.lowspec.rendercore.EntityRenderMetrics;
 import dev.lowspec.rendercore.aether.AetherEngine;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import dev.lowspec.rendercore.RenderFrameMetrics;
@@ -29,6 +30,7 @@ public abstract class GameRendererMetricsMixin {
     @Inject(method = "render(Lnet/minecraft/client/render/RenderTickCounter;Z)V", at = @At("RETURN"))
     private void lowspec$finishRenderTiming(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
         AetherEngine.endFrame();
+        EntityRenderMetrics.finishFrame();
         long start = lowspec$renderStartNanos;
         if (start != 0L) {
             long elapsed = System.nanoTime() - start;
