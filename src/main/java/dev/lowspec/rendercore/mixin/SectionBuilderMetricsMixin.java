@@ -2,6 +2,7 @@ package dev.lowspec.rendercore.mixin;
 
 import dev.lowspec.rendercore.ChunkMeshMetrics;
 import dev.lowspec.rendercore.ChunkRegionStateCache;
+import dev.lowspec.rendercore.EmptySectionFastPath;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
@@ -20,13 +21,27 @@ public abstract class SectionBuilderMetricsMixin {
 
     @Inject(
             method = "build(Lnet/minecraft/util/math/ChunkSectionPos;Lnet/minecraft/client/render/chunk/ChunkRendererRegion;Lcom/mojang/blaze3d/systems/VertexSorter;Lnet/minecraft/client/render/chunk/BlockBufferAllocatorStorage;)Lnet/minecraft/client/render/chunk/SectionBuilder$RenderData;",
-            at = @At("HEAD")
+            at = @At("HEAD"),
+            cancellable = true
     )
     private void lowspec$beginMeshBuild(ChunkSectionPos sectionPos, ChunkRendererRegion region,
                                         VertexSorter sorter, BlockBufferAllocatorStorage storage,
                                         CallbackInfoReturnable<SectionBuilder.RenderData> cir) {
-        lowspec$meshBuildStartNanos.set(LowSpecRenderCoreClient.CONFIG != null
-                && LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled ? System.nanoTime() : 0L);
+        boolean diagnostics = LowSpecRenderCoreClient.CONFIG != null
+                && LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled;
+        long start = diagnostics ? System.nanoTime() : 0L;
+        lowspec$meshBuildStartNanos.set(start);
+
+        if (LowSpecRenderCoreClient.CONFIG == null
+                || !LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled) return;
+
+        SectionBuilder.RenderData empty = EmptySectionFastPath.tryBuildEmpty(sectionPos, region);
+        if (empty == null) return;
+
+        if (start != 0L) ChunkMeshMetrics.record(System.nanoTime() - start);
+        lowspec$meshBuildStartNanos.remove();
+        ChunkRegionStateCache.clear(region);
+        cir.setReturnValue(empty);
     }
 
     @Inject(
@@ -39,8 +54,8 @@ public abstract class SectionBuilderMetricsMixin {
         long start = lowspec$meshBuildStartNanos.get();
         if (start != 0L) {
             ChunkMeshMetrics.record(System.nanoTime() - start);
-            lowspec$meshBuildStartNanos.remove();
         }
+        lowspec$meshBuildStartNanos.remove();
         ChunkRegionStateCache.clear(region);
     }
 }
