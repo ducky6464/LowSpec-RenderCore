@@ -68,6 +68,10 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg / %.3f ms p95", chunks.averageMillis(), chunks.p95Millis())
                                             + " | Samples: " + chunks.samples()));
                             context.getSource().sendFeedback(Text.literal(
+                                    "Paced chunk rebuild requests: " + ChunkRenderScheduler.pendingCount()
+                                            + " | Scheduler: " + (CONFIG.chunkSchedulingEnabled ? "ON" : "OFF")
+                                            + " | Budget: " + CONFIG.chunkRebuildsPerTick + "/tick"));
+                            context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
                             return 1;
