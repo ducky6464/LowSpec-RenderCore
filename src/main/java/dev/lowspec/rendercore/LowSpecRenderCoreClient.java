@@ -100,8 +100,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "GPU chunk buffer pool: " + ChunkGpuBufferPool.getReuseHits() + " reuses"
                                             + " | " + String.format(java.util.Locale.ROOT, "%.2f", ChunkGpuBufferPool.getPooledBytes() / 1048576.0)
                                             + " / 16 MiB retained"));
+                            LightingStateCache.Snapshot lightCache = LightingStateCache.snapshot();
                             context.getSource().sendFeedback(Text.literal(
-                                    "Lighting state cache: " + (CONFIG.lightingStateCacheEnabled ? "ON" : "OFF")));
+                                    "Lighting state cache: " + (CONFIG.lightingStateCacheEnabled ? "ON" : "OFF")
+                                            + " | " + lightCache.hits() + " hits / " + lightCache.misses()
+                                            + " misses | " + String.format(java.util.Locale.ROOT, "%.1f%% hit rate",
+                                                    lightCache.hitRatePercent())));
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
