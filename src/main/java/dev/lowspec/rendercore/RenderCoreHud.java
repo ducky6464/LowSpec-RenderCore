@@ -63,7 +63,7 @@ public final class RenderCoreHud {
             context.drawTextWithShadow(client.textRenderer,
                     Text.literal("Particles admitted: " + (config.particleBudgetEnabled
                             ? ParticleBudget.getAdmittedThisTick() : "limiter off")),
-                    x, y + 77, color);
+                    x, y + 88, color);
         });
     }
 }
