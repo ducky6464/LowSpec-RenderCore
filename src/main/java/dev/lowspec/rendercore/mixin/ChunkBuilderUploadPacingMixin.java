@@ -22,10 +22,18 @@ import java.util.Queue;
 public abstract class ChunkBuilderUploadPacingMixin {
     @Shadow @Final private Queue<Runnable> uploadQueue;
     @Unique private int lowspec$uploadsThisFrame;
+    @Unique private int lowspec$uploadLimit;
 
     @Inject(method = "upload()V", at = @At("HEAD"))
     private void lowspec$beginUploadFrame(CallbackInfo ci) {
         lowspec$uploadsThisFrame = 0;
+        if (LowSpecRenderCoreClient.CONFIG == null
+                || !LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled) {
+            lowspec$uploadLimit = Integer.MAX_VALUE;
+        } else {
+            lowspec$uploadLimit = ChunkUploadBudget.effectiveLimit(
+                    LowSpecRenderCoreClient.CONFIG.chunkUploadsPerFrame);
+        }
     }
 
     @Redirect(
@@ -34,12 +42,7 @@ public abstract class ChunkBuilderUploadPacingMixin {
     )
     private Object lowspec$paceChunkUploads(Queue<?> queue) {
         if (queue != uploadQueue) return queue.poll();
-        if (LowSpecRenderCoreClient.CONFIG == null
-                || !LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled) {
-            return queue.poll();
-        }
-        int limit = ChunkUploadBudget.effectiveLimit(LowSpecRenderCoreClient.CONFIG.chunkUploadsPerFrame);
-        if (lowspec$uploadsThisFrame >= limit) return null;
+        if (lowspec$uploadsThisFrame >= lowspec$uploadLimit) return null;
         Object next = queue.poll();
         if (next != null) lowspec$uploadsThisFrame++;
         return next;
