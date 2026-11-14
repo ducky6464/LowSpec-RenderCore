@@ -5,7 +5,6 @@ import net.minecraft.client.render.WorldRenderer;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Map;
 
 /**
