@@ -20,8 +20,12 @@ public abstract class BuffersGpuPoolMixin {
     private void lowspec$returnChunkBuffersToPool(CallbackInfo ci) {
         if (LowSpecRenderCoreClient.CONFIG == null
                 || !LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled) return;
-        ChunkGpuBufferPool.release(vertexBuffer);
-        ChunkGpuBufferPool.release(indexBuffer);
+        GpuBuffer retiredVertex = vertexBuffer;
+        GpuBuffer retiredIndex = indexBuffer;
+        vertexBuffer = null;
+        indexBuffer = null;
+        ChunkGpuBufferPool.release(retiredVertex);
+        if (retiredIndex != retiredVertex) ChunkGpuBufferPool.release(retiredIndex);
         ci.cancel();
     }
 }
