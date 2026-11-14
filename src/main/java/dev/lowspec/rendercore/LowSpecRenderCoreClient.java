@@ -97,6 +97,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "Chunk uploads: " + ChunkUploadBudget.getLastEffectiveLimit()
                                             + "/" + CONFIG.chunkUploadsPerFrame + " per frame (adaptive)"));
                             context.getSource().sendFeedback(Text.literal(
+                                    "GPU chunk buffer pool: " + ChunkGpuBufferPool.getReuseHits() + " reuses"
+                                            + " | " + String.format(java.util.Locale.ROOT, "%.2f", ChunkGpuBufferPool.getPooledBytes() / 1048576.0)
+                                            + " / 16 MiB retained"));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Lighting state cache: " + (CONFIG.lightingStateCacheEnabled ? "ON" : "OFF")));
+                            context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
                             return 1;
