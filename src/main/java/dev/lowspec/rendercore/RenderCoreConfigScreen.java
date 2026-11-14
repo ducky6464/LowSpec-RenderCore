@@ -3,11 +3,10 @@ package dev.lowspec.rendercore;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.TextWidget;
 import net.minecraft.text.Text;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.IntConsumer;
 import java.util.function.IntSupplier;
 import java.util.function.BooleanSupplier;
@@ -17,12 +16,6 @@ public final class RenderCoreConfigScreen extends Screen {
     private static final String[] PAGES = {"Entities", "Other", "Chunks", "Lighting", "Diagnostics"};
     private final Screen parent;
     private int page;
-    private final List<RowLabel> rowLabels = new ArrayList<>();
-    private final List<NumericValue> numericValues = new ArrayList<>();
-
-    private record RowLabel(String text, int y) {}
-    private record NumericValue(IntSupplier getter, int x, int y) {}
-
     public RenderCoreConfigScreen(Screen parent) {
         super(Text.literal("LowSpec RenderCore Settings"));
         this.parent = parent;
@@ -30,9 +23,9 @@ public final class RenderCoreConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        rowLabels.clear();
-        numericValues.clear();
         int center = width / 2;
+        addDrawableChild(new TextWidget(0, 18, width, 16, title, textRenderer)
+                .alignCenter().setTextColor(0xFFFFFF));
         int tabWidth = Math.min(82, Math.max(60, (width - 20) / PAGES.length));
         int totalWidth = tabWidth * PAGES.length;
         int tabX = center - totalWidth / 2;
@@ -109,7 +102,8 @@ public final class RenderCoreConfigScreen extends Screen {
     }
 
     private void toggle(String label, int y, BooleanSupplier getter, Consumer<Boolean> setter) {
-        addRowLabel(label, y);
+        int x = width / 2 + 20;
+        addRowLabel(label, y, x);
         addDrawableChild(ButtonWidget.builder(toggleText(getter.getAsBoolean()), b -> {
             setter.accept(!getter.getAsBoolean());
             saveConfig();
@@ -119,15 +113,20 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private void adjust(String label, int y, IntSupplier getter, IntConsumer setter,
                         int step, int min, int max) {
-        addRowLabel(label, y);
         int x = width / 2 + 20;
-        numericValues.add(new NumericValue(getter, x + 76, y + 6));
+        addRowLabel(label, y, x);
+        TextWidget valueWidget = new TextWidget(x + 30, y, 44, 20,
+                Text.literal(Integer.toString(getter.getAsInt())), textRenderer)
+                .alignCenter().setTextColor(0xFFFFFF);
         addDrawableChild(ButtonWidget.builder(Text.literal("-"), b -> {
             setter.accept(Math.max(min, getter.getAsInt() - step));
+            valueWidget.setMessage(Text.literal(Integer.toString(getter.getAsInt())));
             saveConfig();
         }).dimensions(x, y, 28, 20).build());
+        addDrawableChild(valueWidget);
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), b -> {
             setter.accept(Math.min(max, getter.getAsInt() + step));
+            valueWidget.setMessage(Text.literal(Integer.toString(getter.getAsInt())));
             saveConfig();
         }).dimensions(x + 104, y, 28, 20).build());
     }
@@ -136,25 +135,12 @@ public final class RenderCoreConfigScreen extends Screen {
         return Text.literal(enabled ? "ON" : "OFF");
     }
 
-    private void addRowLabel(String label, int y) {
-        rowLabels.add(new RowLabel(label, y + 6));
-    }
-
-    @Override
-    public void render(net.minecraft.client.gui.DrawContext context, int mouseX, int mouseY, float delta) {
-        // Render vanilla widgets first. Draw setting text afterwards so button backgrounds
-        // and other widgets cannot cover the labels or numeric values.
-        super.render(context, mouseX, mouseY, delta);
-        context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF);
+    private void addRowLabel(String label, int y, int controlsX) {
         int labelX = Math.max(8, width / 2 - 190);
-        for (RowLabel row : rowLabels) {
-            context.drawTextWithShadow(textRenderer, Text.literal(row.text()), labelX, row.y(), 0xFFFFFF);
-        }
-        for (NumericValue value : numericValues) {
-            context.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal(Integer.toString(value.getter().getAsInt())),
-                    value.x(), value.y(), 0xE0E0E0);
-        }
+        int labelWidth = Math.max(80, controlsX - labelX - 14);
+        TextWidget labelWidget = new TextWidget(labelX, y + 4, labelWidth, 16,
+                Text.literal(label), textRenderer).alignLeft().setTextColor(0xFFFFFF);
+        addDrawableChild(labelWidget);
     }
 
     private void saveConfig() {
