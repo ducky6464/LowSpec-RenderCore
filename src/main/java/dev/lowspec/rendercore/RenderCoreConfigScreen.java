@@ -7,17 +7,18 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntConsumer;
+import java.util.function.IntSupplier;
+import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 public final class RenderCoreConfigScreen extends Screen {
-    private static final String[] CATEGORIES = {
-            "Players", "Hostile mobs", "Passive mobs", "Villagers",
-            "Dropped items", "Projectiles", "Experience orbs", "Armor stands"
-    };
-    private static final String[] KEYS = {
-            "players", "hostile", "passive", "villagers",
-            "items", "projectiles", "orbs", "armorstands"
-    };
+    private static final String[] PAGES = {"Entities", "Other", "Chunks", "Lighting", "Diagnostics"};
     private final Screen parent;
+    private final List<String> rowLabels = new ArrayList<>();
+    private int page;
 
     public RenderCoreConfigScreen(Screen parent) {
         super(Text.literal("LowSpec RenderCore Settings"));
@@ -26,287 +27,143 @@ public final class RenderCoreConfigScreen extends Screen {
 
     @Override
     protected void init() {
-        int center = this.width / 2;
-        int rowStart = 54;
-        for (int i = 0; i < CATEGORIES.length; i++) {
-            final int index = i;
-            int y = rowStart + i * 25;
-            addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustDistance(index, -16))
-                    .dimensions(center + 45, y, 28, 20).build());
-            addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustDistance(index, 16))
-                    .dimensions(center + 112, y, 28, 20).build());
+        rowLabels.clear();
+        int center = width / 2;
+        int tabWidth = Math.min(58, Math.max(42, (width - 20) / PAGES.length));
+        int totalWidth = tabWidth * PAGES.length;
+        int tabX = center - totalWidth / 2;
+        for (int i = 0; i < PAGES.length; i++) {
+            final int selected = i;
+            addDrawableChild(ButtonWidget.builder(Text.literal(PAGES[i]), b -> {
+                page = selected;
+                clearAndInit();
+            }).dimensions(tabX + i * tabWidth, 43, tabWidth - 3, 20).build());
         }
 
-        int toggleY = rowStart + CATEGORIES.length * 25 + 8;
-        addDrawableChild(ButtonWidget.builder(cullingText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.entityDistanceCullingEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.entityDistanceCullingEnabled;
-            saveConfig();
-            button.setMessage(cullingText());
-        }).dimensions(center - 145, toggleY, 140, 20).build());
-        addDrawableChild(ButtonWidget.builder(diagnosticsText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled;
-            saveConfig();
-            button.setMessage(diagnosticsText());
-        }).dimensions(center + 5, toggleY, 140, 20).build());
+        int y = 82;
+        switch (page) {
+            case 0 -> buildEntityPage(y);
+            case 1 -> buildOtherPage(y);
+            case 2 -> buildChunkPage(y);
+            case 3 -> buildLightingPage(y);
+            default -> buildDiagnosticsPage(y);
+        }
 
-        addDrawableChild(ButtonWidget.builder(lightingText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.lightingDiagnosticsEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.lightingDiagnosticsEnabled;
-            saveConfig();
-            button.setMessage(lightingText());
-        }).dimensions(center - 145, toggleY + 25, 140, 20).build());
-        addDrawableChild(ButtonWidget.builder(chunkText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled;
-            saveConfig();
-            button.setMessage(chunkText());
-        }).dimensions(center + 5, toggleY + 25, 140, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("Done"), b -> close())
+                .dimensions(center - 70, height - 28, 140, 20).build());
+    }
 
-        int particleY = toggleY + 50;
-        addDrawableChild(ButtonWidget.builder(particleText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.particleBudgetEnabled = !LowSpecRenderCoreClient.CONFIG.particleBudgetEnabled;
-            saveConfig();
-            button.setMessage(particleText());
-        }).dimensions(center - 145, particleY, 140, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustParticleBudget(-50))
-                .dimensions(center + 5, particleY, 28, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustParticleBudget(50))
-                .dimensions(center + 112, particleY, 28, 20).build());
+    private void buildEntityPage(int y) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        toggle("Entity distance culling", y, () -> c.entityDistanceCullingEnabled,
+                v -> c.entityDistanceCullingEnabled = v); y += 27;
+        adjust("Players distance", y, () -> c.playerRenderDistance, v -> c.playerRenderDistance = v, 16, 16, 512); y += 27;
+        adjust("Hostile mob distance", y, () -> c.hostileMobRenderDistance, v -> c.hostileMobRenderDistance = v, 16, 16, 256); y += 27;
+        adjust("Passive mob distance", y, () -> c.passiveMobRenderDistance, v -> c.passiveMobRenderDistance = v, 16, 16, 256); y += 27;
+        adjust("Villager distance", y, () -> c.villagerRenderDistance, v -> c.villagerRenderDistance = v, 16, 16, 256); y += 27;
+        adjust("Dropped item distance", y, () -> c.droppedItemRenderDistance, v -> c.droppedItemRenderDistance = v, 16, 8, 128); y += 27;
+        adjust("Projectile distance", y, () -> c.projectileRenderDistance, v -> c.projectileRenderDistance = v, 16, 8, 128); y += 27;
+        adjust("Experience orb distance", y, () -> c.experienceOrbRenderDistance, v -> c.experienceOrbRenderDistance = v, 16, 8, 128); y += 27;
+        adjust("Armor stand distance", y, () -> c.armorStandRenderDistance, v -> c.armorStandRenderDistance = v, 16, 8, 128);
+    }
 
-        int blockEntityY = particleY + 25;
-        addDrawableChild(ButtonWidget.builder(blockEntityText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.blockEntityDistanceCullingEnabled = !LowSpecRenderCoreClient.CONFIG.blockEntityDistanceCullingEnabled;
-            saveConfig();
-            button.setMessage(blockEntityText());
-        }).dimensions(center - 145, blockEntityY, 140, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustBlockEntityDistance(-16))
-                .dimensions(center + 5, blockEntityY, 28, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustBlockEntityDistance(16))
-                .dimensions(center + 112, blockEntityY, 28, 20).build());
+    private void buildOtherPage(int y) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        toggle("Block entity culling", y, () -> c.blockEntityDistanceCullingEnabled,
+                v -> c.blockEntityDistanceCullingEnabled = v); y += 30;
+        adjust("Block entity distance", y, () -> c.blockEntityRenderDistance,
+                v -> c.blockEntityRenderDistance = v, 16, 16, 256); y += 30;
+        toggle("Particle budget", y, () -> c.particleBudgetEnabled, v -> c.particleBudgetEnabled = v); y += 30;
+        adjust("Particle admissions / tick", y, () -> c.maxParticlesPerTick,
+                v -> c.maxParticlesPerTick = v, 50, 50, 2000);
+    }
 
-        int hudY = blockEntityY + 25;
-        addDrawableChild(ButtonWidget.builder(hudText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.performanceHudEnabled = !LowSpecRenderCoreClient.CONFIG.performanceHudEnabled;
-            saveConfig();
-            button.setMessage(hudText());
-        }).dimensions(center - 145, hudY, 90, 20).build());
+    private void buildChunkPage(int y) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        toggle("Chunk rebuild pacing", y, () -> c.chunkSchedulingEnabled, v -> c.chunkSchedulingEnabled = v); y += 30;
+        adjust("Rebuilds / tick", y, () -> c.chunkRebuildsPerTick, v -> c.chunkRebuildsPerTick = v, 16, 16, 512); y += 30;
+        toggle("Chunk upload pacing", y, () -> c.chunkUploadPacingEnabled, v -> c.chunkUploadPacingEnabled = v); y += 30;
+        adjust("Uploads / frame", y, () -> c.chunkUploadsPerFrame, v -> c.chunkUploadsPerFrame = v, 1, 1, 64); y += 30;
+        toggle("Chunk state cache", y, () -> c.chunkMeshStateCacheEnabled, v -> c.chunkMeshStateCacheEnabled = v); y += 30;
+        toggle("Model parts cache", y, () -> c.chunkMeshModelPartsCacheEnabled, v -> c.chunkMeshModelPartsCacheEnabled = v); y += 30;
+        toggle("GPU buffer pool", y, () -> c.chunkGpuBufferPoolEnabled, v -> c.chunkGpuBufferPoolEnabled = v);
+    }
 
-        addDrawableChild(ButtonWidget.builder(meshCacheText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled;
-            saveConfig();
-            button.setMessage(meshCacheText());
-        }).dimensions(center - 50, hudY, 90, 20).build());
+    private void buildLightingPage(int y) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        toggle("Lighting update pacing", y, () -> c.lightingUpdatePacingEnabled, v -> c.lightingUpdatePacingEnabled = v); y += 30;
+        toggle("Lighting state cache", y, () -> c.lightingStateCacheEnabled, v -> c.lightingStateCacheEnabled = v); y += 30;
+        toggle("Lighting shape cache", y, () -> c.lightingShapeCacheEnabled, v -> c.lightingShapeCacheEnabled = v); y += 30;
+        toggle("Lighting timing diagnostics", y, () -> c.lightingDiagnosticsEnabled, v -> c.lightingDiagnosticsEnabled = v);
+    }
 
-        addDrawableChild(ButtonWidget.builder(chunkSchedulerText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled = !LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled;
-            saveConfig();
-            button.setMessage(chunkSchedulerText());
-        }).dimensions(center + 45, hudY, 90, 20).build());
-        int chunkBudgetY = hudY + 25;
-        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustChunkBudget(-16))
-                .dimensions(center + 5, chunkBudgetY, 28, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkBudget(16))
-                .dimensions(center + 112, chunkBudgetY, 28, 20).build());
+    private void buildDiagnosticsPage(int y) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        toggle("General diagnostics", y, () -> c.diagnosticsEnabled, v -> c.diagnosticsEnabled = v); y += 30;
+        toggle("Chunk diagnostics", y, () -> c.chunkDiagnosticsEnabled, v -> c.chunkDiagnosticsEnabled = v); y += 30;
+        toggle("Performance HUD", y, () -> c.performanceHudEnabled, v -> c.performanceHudEnabled = v);
+    }
 
-        int uploadY = chunkBudgetY + 25;
-        addDrawableChild(ButtonWidget.builder(chunkUploadText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled = !LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled;
+    private void toggle(String label, int y, BooleanSupplier getter, Consumer<Boolean> setter) {
+        rowLabels.add(label);
+        addDrawableChild(ButtonWidget.builder(toggleText(getter.getAsBoolean()), b -> {
+            setter.accept(!getter.getAsBoolean());
             saveConfig();
-            button.setMessage(chunkUploadText());
-        }).dimensions(center - 145, uploadY, 90, 20).build());
-        addDrawableChild(ButtonWidget.builder(lightingPacingText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled;
-            saveConfig();
-            button.setMessage(lightingPacingText());
-        }).dimensions(center - 50, uploadY, 90, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustChunkUploads(-1))
-                .dimensions(center + 45, uploadY, 28, 20).build());
-        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkUploads(1))
-                .dimensions(center + 112, uploadY, 28, 20).build());
+            b.setMessage(toggleText(getter.getAsBoolean()));
+        }).dimensions(width / 2 + 20, y, Math.min(150, width / 2 - 28), 20).build());
+    }
 
-        int emptyFastPathY = uploadY + 25;
-        addDrawableChild(ButtonWidget.builder(gpuBufferPoolText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled;
+    private void adjust(String label, int y, IntSupplier getter, IntConsumer setter,
+                        int step, int min, int max) {
+        rowLabels.add(label);
+        int x = width / 2 + 20;
+        addDrawableChild(ButtonWidget.builder(Text.literal("-"), b -> {
+            setter.accept(Math.max(min, getter.getAsInt() - step));
             saveConfig();
-            button.setMessage(gpuBufferPoolText());
-        }).dimensions(center - 73, emptyFastPathY, 68, 20).build());
-        addDrawableChild(ButtonWidget.builder(lightingStateCacheText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled;
+        }).dimensions(x, y, 28, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("+"), b -> {
+            setter.accept(Math.min(max, getter.getAsInt() + step));
             saveConfig();
-            button.setMessage(lightingStateCacheText());
-        }).dimensions(center - 1, emptyFastPathY, 68, 20).build());
-        addDrawableChild(ButtonWidget.builder(lightingShapeCacheText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.lightingShapeCacheEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.lightingShapeCacheEnabled;
-            saveConfig();
-            button.setMessage(lightingShapeCacheText());
-        }).dimensions(center + 71, emptyFastPathY, 68, 20).build());
-        addDrawableChild(ButtonWidget.builder(modelPartsCacheText(), button -> {
-            LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled =
-                    !LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled;
-            saveConfig();
-            button.setMessage(modelPartsCacheText());
-        }).dimensions(center - 100, emptyFastPathY + 25, 200, 20).build());
+        }).dimensions(x + 104, y, 28, 20).build());
+    }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
-                .dimensions(center - 100, this.height - 22, 200, 20).build());
+    private Text toggleText(boolean enabled) {
+        return Text.literal(enabled ? "ON" : "OFF");
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         renderBackground(context, mouseX, mouseY, delta);
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF);
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("Entity render distance (blocks)"), width / 2, 38, 0xB8C8D8);
-        int center = width / 2;
-        int rowStart = 60;
-        for (int i = 0; i < CATEGORIES.length; i++) {
-            int y = rowStart + i * 25 + 6;
-            context.drawTextWithShadow(textRenderer, Text.literal(CATEGORIES[i]), center - 145, y, 0xFFFFFF);
-            context.drawCenteredTextWithShadow(textRenderer,
-                    Text.literal(Integer.toString(getDistance(i))), center + 91, y, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer, Text.literal(PAGES[page]), width / 2, 68, 0xB8C8D8);
+        int y = 88;
+        for (String label : rowLabels) {
+            context.drawTextWithShadow(textRenderer, Text.literal(label), width / 2 - 150, y, 0xFFFFFF);
+            y += page == 0 ? 27 : 30;
         }
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("Particle budget: " + LowSpecRenderCoreClient.CONFIG.maxParticlesPerTick + " admissions / tick"),
-                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 64, 0xE0E0E0);
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("Block entity distance: " + LowSpecRenderCoreClient.CONFIG.blockEntityRenderDistance + " blocks"),
-                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 89, 0xE0E0E0);
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("Chunk rebuild budget: " + LowSpecRenderCoreClient.CONFIG.chunkRebuildsPerTick + " / tick"),
-                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 139, 0xE0E0E0);
-        context.drawCenteredTextWithShadow(textRenderer,
-                Text.literal("Chunk uploads: " + LowSpecRenderCoreClient.CONFIG.chunkUploadsPerFrame + " / frame"),
-                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 164, 0xE0E0E0);
+        if (page == 0 || page == 1 || page == 2) {
+            RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+            if (page == 0) {
+                int[] values = {c.playerRenderDistance, c.hostileMobRenderDistance, c.passiveMobRenderDistance,
+                        c.villagerRenderDistance, c.droppedItemRenderDistance, c.projectileRenderDistance,
+                        c.experienceOrbRenderDistance, c.armorStandRenderDistance};
+                drawValues(context, values, 109, 27);
+            } else if (page == 1) {
+                drawValues(context, new int[]{c.blockEntityRenderDistance, c.maxParticlesPerTick}, 139, 30);
+            } else {
+                drawValues(context, new int[]{c.chunkRebuildsPerTick, c.chunkUploadsPerFrame}, 139, 30);
+            }
+        }
         super.render(context, mouseX, mouseY, delta);
     }
 
-    private void adjustDistance(int index, int amount) {
-        RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
-        int current = getDistance(index);
-        int min = index < 4 ? 16 : 8;
-        int max = index == 0 ? 512 : index < 4 ? 256 : 128;
-        setDistance(index, Math.max(min, Math.min(max, current + amount)));
-        saveConfig();
-    }
-
-    private int getDistance(int index) {
-        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-        return switch (index) {
-            case 0 -> c.playerRenderDistance;
-            case 1 -> c.hostileMobRenderDistance;
-            case 2 -> c.passiveMobRenderDistance;
-            case 3 -> c.villagerRenderDistance;
-            case 4 -> c.droppedItemRenderDistance;
-            case 5 -> c.projectileRenderDistance;
-            case 6 -> c.experienceOrbRenderDistance;
-            default -> c.armorStandRenderDistance;
-        };
-    }
-
-    private void setDistance(int index, int value) {
-        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-        switch (index) {
-            case 0 -> c.playerRenderDistance = value;
-            case 1 -> c.hostileMobRenderDistance = value;
-            case 2 -> c.passiveMobRenderDistance = value;
-            case 3 -> c.villagerRenderDistance = value;
-            case 4 -> c.droppedItemRenderDistance = value;
-            case 5 -> c.projectileRenderDistance = value;
-            case 6 -> c.experienceOrbRenderDistance = value;
-            default -> c.armorStandRenderDistance = value;
+    private void drawValues(DrawContext context, int[] values, int startY, int spacing) {
+        int y = startY;
+        for (int value : values) {
+            context.drawCenteredTextWithShadow(textRenderer, Text.literal(Integer.toString(value)),
+                    width / 2 + 76, y, 0xE0E0E0);
+            y += spacing;
         }
-    }
-
-    private void adjustBlockEntityDistance(int amount) {
-        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-        c.blockEntityRenderDistance = Math.max(16, Math.min(256, c.blockEntityRenderDistance + amount));
-        saveConfig();
-    }
-
-    private void adjustChunkBudget(int amount) {
-        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-        c.chunkRebuildsPerTick = Math.max(16, Math.min(512, c.chunkRebuildsPerTick + amount));
-        saveConfig();
-    }
-
-    private Text chunkSchedulerText() {
-        return Text.literal("Chunk pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled ? "ON" : "OFF"));
-    }
-
-    private Text meshCacheText() {
-        return Text.literal("Mesh cache: " + (LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled ? "ON" : "OFF"));
-    }
-
-    private void adjustChunkUploads(int amount) {
-        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-        c.chunkUploadsPerFrame = Math.max(1, Math.min(64, c.chunkUploadsPerFrame + amount));
-        saveConfig();
-    }
-
-    private Text chunkUploadText() {
-        return Text.literal("Upload pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled ? "ON" : "OFF"));
-    }
-
-    private Text lightingPacingText() {
-        return Text.literal("Lighting pacing: " + (LowSpecRenderCoreClient.CONFIG.lightingUpdatePacingEnabled ? "ON" : "OFF"));
-    }
-
-    private Text gpuBufferPoolText() {
-        return Text.literal("GPU: " + (LowSpecRenderCoreClient.CONFIG.chunkGpuBufferPoolEnabled ? "ON" : "OFF"));
-    }
-
-    private Text lightingStateCacheText() {
-        return Text.literal("Light: " + (LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled ? "ON" : "OFF"));
-    }
-
-    private Text lightingShapeCacheText() {
-        return Text.literal("Shapes: " + (LowSpecRenderCoreClient.CONFIG.lightingShapeCacheEnabled ? "ON" : "OFF"));
-    }
-
-    private Text modelPartsCacheText() {
-        return Text.literal("Model parts cache: "
-                + (LowSpecRenderCoreClient.CONFIG.chunkMeshModelPartsCacheEnabled ? "ON" : "OFF"));
-    }
-
-    private Text hudText() {
-        return Text.literal("Performance HUD: " + (LowSpecRenderCoreClient.CONFIG.performanceHudEnabled ? "ON" : "OFF"));
-    }
-
-    private Text blockEntityText() {
-        return Text.literal("Block entity culling: " + (LowSpecRenderCoreClient.CONFIG.blockEntityDistanceCullingEnabled ? "ON" : "OFF"));
-    }
-
-    private void adjustParticleBudget(int amount) {
-        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
-        c.maxParticlesPerTick = Math.max(50, Math.min(2000, c.maxParticlesPerTick + amount));
-        saveConfig();
-    }
-
-    private Text particleText() {
-        return Text.literal("Particle limit: " + (LowSpecRenderCoreClient.CONFIG.particleBudgetEnabled ? "ON" : "OFF"));
-    }
-
-    private Text cullingText() {
-        return Text.literal("Entity culling: " + (LowSpecRenderCoreClient.CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF"));
-    }
-
-    private Text diagnosticsText() {
-        return Text.literal("Diagnostics: " + (LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled ? "ON" : "OFF"));
-    }
-
-    private Text lightingText() {
-        return Text.literal("Lighting timing: " + (LowSpecRenderCoreClient.CONFIG.lightingDiagnosticsEnabled ? "ON" : "OFF"));
-    }
-
-    private Text chunkText() {
-        return Text.literal("Chunk diagnostics: " + (LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled ? "ON" : "OFF"));
     }
 
     private void saveConfig() {
