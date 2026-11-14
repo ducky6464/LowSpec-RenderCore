@@ -43,7 +43,7 @@ The lighting and chunk instrumentation only measure vanilla work. Chunk update t
 
 Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
-- Chunk mesh/rebuild optimization.
+- Deeper chunk mesh-generation and GPU upload optimization. The current scheduler only paces and coalesces rebuild requests; it does not rewrite vanilla mesh generation.
 - Actual GPU time, display-present frame time, and GPU metrics.
 - In-game compatibility and performance testing across hardware.
 
@@ -58,7 +58,7 @@ Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for 
 - `/rendercore culling off` disables entity-distance culling and saves the setting.
 - `/rendercore distance players 128` changes the selected category's render distance in blocks. Categories: `players`, `hostile`, `passive`, `villagers`, `items`, `projectiles`, `orbs`, `armorstands`. Values are clamped to safe supported ranges and saved automatically.
 
-The particle budget defaults to 400 new particle admissions per client tick and can be changed or disabled in Mod Menu. This is a burst limiter, not a cap on total live particles. Block-entity culling defaults to 96 blocks and preserves beacon render states; other distant block-entity render states are skipped beyond the selected distance. The performance HUD is disabled by default and can be enabled in the Mod Menu configuration screen. Chunk timing and queue counters are diagnostics only; they do not change chunk scheduling.
+The particle budget defaults to 400 new particle admissions per client tick and can be changed or disabled in Mod Menu. This is a burst limiter, not a cap on total live particles. Block-entity culling defaults to 96 blocks and preserves beacon render states; other distant block-entity render states are skipped beyond the selected distance. The performance HUD is disabled by default and can be enabled in the Mod Menu configuration screen. Chunk rebuild pacing defaults to 128 requests per tick and can be toggled or adjusted from Mod Menu. It prioritizes important rebuilds, coalesces duplicate pending section requests, and never intentionally drops requests. Lower budgets reduce scheduling spikes but can make newly changed chunks take longer to appear. Chunk timing and queue counters are diagnostics.
 
 ## Build
 
