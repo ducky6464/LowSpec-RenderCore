@@ -19,7 +19,7 @@ public final class AdaptiveEntityVisibility {
     }
 
     public static void recordCandidate(boolean player) {
-        if (!player) candidates++;
+        candidates++;
     }
 
     public static void finishFrame(long frameNanos) {
