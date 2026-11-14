@@ -19,7 +19,7 @@ Implemented:
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Optional per-client-tick particle admission budget to limit sudden particle bursts. This limits newly admitted particles per tick; it does not remove existing particles or change server-side effects.
 - Optional block-entity render-distance culling at render-state creation time, with beacon rendering preserved.
-- Optional in-game performance HUD showing client tick time, CPU-side render average/p95, lighting timing, particle admissions, and live chunk task/upload queue counts. The HUD is disabled by default and can be toggled in Mod Menu.
+- Optional in-game performance HUD showing client tick time, CPU-side render average/p95, lighting timing, CPU time spent scheduling visible chunk updates, live chunk task/upload queue counts, free chunk buffers, and particle admissions. The HUD is disabled by default and can be toggled in Mod Menu.
 - Independent distance values for each supported entity category.
 - GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
 
@@ -39,7 +39,7 @@ render.armor_stands=64
 
 The config file is generated automatically on first launch. Distances are in blocks. This only prevents selected entities from being drawn beyond the chosen distance. It does not remove entities, change server simulation, or stop entity AI. The local player and active camera entity are preserved. Unknown entity categories retain vanilla rendering behavior.
 
-The lighting instrumentation only measures vanilla work. It does not alter light propagation, skip updates, or claim a lighting speedup. Metrics are exposed in code for the upcoming diagnostics display.
+The lighting and chunk instrumentation only measure vanilla work. Chunk update timing covers the CPU-side visible-chunk scheduling/update method, not mesh-generation time on worker threads or GPU upload time. These metrics do not alter lighting propagation, skip updates, or claim a speedup.
 
 Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
@@ -59,7 +59,7 @@ Install Mod Menu 17.0.1 for Minecraft 1.21.11 to get a **Configure** button for 
 - `/rendercore culling off` disables entity-distance culling and saves the setting.
 - `/rendercore distance players 128` changes the selected category's render distance in blocks. Categories: `players`, `hostile`, `passive`, `villagers`, `items`, `projectiles`, `orbs`, `armorstands`. Values are clamped to safe supported ranges and saved automatically.
 
-The particle budget defaults to 400 new particle admissions per client tick and can be changed or disabled in Mod Menu. This is a burst limiter, not a cap on total live particles. Block-entity culling defaults to 96 blocks and preserves beacon render states; other distant block-entity render states are skipped beyond the selected distance. The performance HUD is disabled by default and can be enabled in the Mod Menu configuration screen.
+The particle budget defaults to 400 new particle admissions per client tick and can be changed or disabled in Mod Menu. This is a burst limiter, not a cap on total live particles. Block-entity culling defaults to 96 blocks and preserves beacon render states; other distant block-entity render states are skipped beyond the selected distance. The performance HUD is disabled by default and can be enabled in the Mod Menu configuration screen. Chunk timing and queue counters are diagnostics only; they do not change chunk scheduling.
 
 ## Build
 
