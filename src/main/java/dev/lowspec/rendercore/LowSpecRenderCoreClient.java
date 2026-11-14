@@ -42,7 +42,8 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                 ChunkRenderScheduler.clear();
             }
             if (tickStartNanos == 0L) return;
-            double elapsedMs = elapsedTickNanos / 1_000_000.0;
+            // Include scheduler drain time so adaptive upload pacing sees the full client tick cost.
+            double elapsedMs = (System.nanoTime() - tickStartNanos) / 1_000_000.0;
             lastClientTickMillis = elapsedMs;
             if (!CONFIG.diagnosticsEnabled) return;
             measuredTicks++;
