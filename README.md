@@ -46,7 +46,6 @@ Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
 - Deeper chunk mesh-generation algorithm optimization and custom GPU buffer management. The mod now measures vanilla section mesh-build time and uses high worker-thread mesh p95 to reduce rebuild scheduling pressure; it does not yet change vanilla's block iteration, face generation, occlusion algorithm, or GPU buffer backend.
 - Actual GPU time, display-present frame time, and GPU metrics.
-- In-game compatibility and performance testing across hardware.
 
 ## Mod Menu settings screen
 
@@ -63,7 +62,7 @@ The particle budget defaults to 400 new particle admissions per client tick and 
 
 ## Build
 
-Requires Java 21. Run `gradle build`, or use the GitHub Actions workflow. A successful workflow uploads the JAR as an artifact.
+Requires Java 21. Run `gradle build`, or use the GitHub Actions workflow. A successful workflow uploads the JAR as an artifact. The project is not considered complete until the latest commit builds and its artifact is available.
 
 ## Engineering rules
 
