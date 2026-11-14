@@ -21,7 +21,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.BlockBufferAllocatorStorage;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
-import net.minecraft.client.render.chunk.EmptySectionFastPath;
+import dev.lowspec.rendercore.EmptySectionFastPath;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.client.render.model.BlockModelPart;
 import net.minecraft.client.util.BufferAllocator;
