@@ -1,6 +1,7 @@
 package dev.lowspec.rendercore.mixin;
 
 import dev.lowspec.rendercore.ChunkMeshMetrics;
+import dev.lowspec.rendercore.ChunkRegionStateCache;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
@@ -40,5 +41,6 @@ public abstract class SectionBuilderMetricsMixin {
             ChunkMeshMetrics.record(System.nanoTime() - start);
             lowspec$meshBuildStartNanos.remove();
         }
+        ChunkRegionStateCache.clear(region);
     }
 }
