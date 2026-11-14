@@ -5,6 +5,7 @@ import net.minecraft.client.render.WorldRenderer;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.Map;
 
 /**
@@ -16,7 +17,7 @@ public final class ChunkRenderScheduler {
     private static final LinkedHashMap<SectionKey, Boolean> IMPORTANT = new LinkedHashMap<>();
     private static final LinkedHashMap<SectionKey, Boolean> NORMAL = new LinkedHashMap<>();
     private static Object currentWorld;
-    private static boolean replaying;
+    private static final ThreadLocal<Boolean> REPLAYING = ThreadLocal.withInitial(() -> false);
 
     private ChunkRenderScheduler() {}
 
@@ -34,30 +35,40 @@ public final class ChunkRenderScheduler {
         return true;
     }
 
-    public static synchronized void drain(WorldRenderer renderer, Object world, int budget) {
-        if (world != currentWorld) {
-            IMPORTANT.clear();
-            NORMAL.clear();
-            currentWorld = world;
+    public static void drain(WorldRenderer renderer, Object world, int budget) {
+        synchronized (ChunkRenderScheduler.class) {
+            if (world != currentWorld) {
+                IMPORTANT.clear();
+                NORMAL.clear();
+                currentWorld = world;
+            }
         }
         if (world == null || budget <= 0) return;
 
         WorldRendererInvoker invoker = (WorldRendererInvoker) renderer;
         int remaining = budget;
-        replaying = true;
+        REPLAYING.set(true);
         try {
             while (remaining-- > 0) {
                 Map.Entry<SectionKey, Boolean> entry = pollNext();
                 if (entry == null) break;
                 SectionKey key = entry.getKey();
-                invoker.lowspec$invokeScheduleChunkRender(key.x(), key.y(), key.z(), entry.getValue());
+                try {
+                    invoker.lowspec$invokeScheduleChunkRender(key.x(), key.y(), key.z(), entry.getValue());
+                } catch (RuntimeException | Error failure) {
+                    synchronized (ChunkRenderScheduler.class) {
+                        LinkedHashMap<SectionKey, Boolean> target = entry.getValue() ? IMPORTANT : NORMAL;
+                        target.putIfAbsent(key, entry.getValue());
+                    }
+                    throw failure;
+                }
             }
         } finally {
-            replaying = false;
+            REPLAYING.remove();
         }
     }
 
-    private static Map.Entry<SectionKey, Boolean> pollNext() {
+    private static synchronized Map.Entry<SectionKey, Boolean> pollNext() {
         Iterator<Map.Entry<SectionKey, Boolean>> it = IMPORTANT.entrySet().iterator();
         if (it.hasNext()) {
             Map.Entry<SectionKey, Boolean> entry = it.next();
@@ -75,7 +86,7 @@ public final class ChunkRenderScheduler {
         return null;
     }
 
-    public static boolean isReplaying() { return replaying; }
+    public static boolean isReplaying() { return REPLAYING.get(); }
 
     public static synchronized int pendingCount() {
         return IMPORTANT.size() + NORMAL.size();
