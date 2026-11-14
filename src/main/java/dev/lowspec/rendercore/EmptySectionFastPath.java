@@ -26,7 +26,8 @@ public final class EmptySectionFastPath {
         if (access.lowspec$isDebugWorld() || !access.lowspec$getBlockEntities().isEmpty()) return null;
 
         PalettedContainer<BlockState> palette = access.lowspec$getBlockPalette();
-        if (palette != null && palette.hasAny(HAS_RENDERABLE_BLOCK_STATE)) return null;
+        // A missing palette is not proof of emptiness; fall back to vanilla in that case.
+        if (palette == null || palette.hasAny(HAS_RENDERABLE_BLOCK_STATE)) return null;
 
         SectionBuilder.RenderData data = new SectionBuilder.RenderData();
         ChunkOcclusionData occlusion = new ChunkOcclusionData();
