@@ -21,11 +21,31 @@ public final class ChunkRenderScheduler {
     public static int adaptiveBudget(int configuredBudget, long elapsedTickNanos) {
         if (configuredBudget <= 16) return Math.max(0, configuredBudget);
         double elapsedMillis = Math.max(0L, elapsedTickNanos) / 1_000_000.0;
-        if (elapsedMillis <= 20.0) return configuredBudget;
-        if (elapsedMillis >= 40.0) return 16;
-        double ratio = (40.0 - elapsedMillis) / 20.0;
-        return Math.max(16, Math.min(configuredBudget,
-                (int) Math.ceil(16.0 + (configuredBudget - 16.0) * ratio)));
+        int budget = configuredBudget;
+        if (elapsedMillis >= 40.0) {
+            budget = 16;
+        } else if (elapsedMillis > 20.0) {
+            double ratio = (40.0 - elapsedMillis) / 20.0;
+            budget = Math.max(16, Math.min(configuredBudget,
+                    (int) Math.ceil(16.0 + (configuredBudget - 16.0) * ratio)));
+        }
+
+        // When chunk diagnostics are enabled, worker-thread mesh cost also informs
+        // the next batch. Expensive section builds mean fewer new jobs should be queued.
+        if (LowSpecRenderCoreClient.CONFIG != null
+                && LowSpecRenderCoreClient.CONFIG.chunkDiagnosticsEnabled) {
+            ChunkMeshMetrics.Snapshot mesh = ChunkMeshMetrics.snapshot();
+            if (mesh.samples() >= 10) {
+                if (mesh.p95Millis() >= 30.0) {
+                    budget = Math.min(budget, Math.max(16, configuredBudget / 4));
+                } else if (mesh.p95Millis() >= 20.0) {
+                    budget = Math.min(budget, Math.max(16, configuredBudget / 2));
+                } else if (mesh.p95Millis() >= 12.0) {
+                    budget = Math.min(budget, Math.max(16, (configuredBudget * 3) / 4));
+                }
+            }
+        }
+        return Math.max(16, Math.min(configuredBudget, budget));
     }
 
     public static synchronized boolean enqueue(int x, int y, int z, boolean important) {
