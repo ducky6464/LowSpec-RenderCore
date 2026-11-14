@@ -20,6 +20,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
 
     private static long measuredTicks;
     private static double averageTickMillis;
+    private static volatile double lastClientTickMillis;
     private long tickStartNanos;
 
     @Override
@@ -40,8 +41,10 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             } else {
                 ChunkRenderScheduler.clear();
             }
-            if (!CONFIG.diagnosticsEnabled || tickStartNanos == 0L) return;
+            if (tickStartNanos == 0L) return;
             double elapsedMs = elapsedTickNanos / 1_000_000.0;
+            lastClientTickMillis = elapsedMs;
+            if (!CONFIG.diagnosticsEnabled) return;
             measuredTicks++;
             averageTickMillis += (elapsedMs - averageTickMillis) / measuredTicks;
         });
@@ -147,6 +150,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
     }
 
     public static double getAverageClientTickMillis() { return averageTickMillis; }
+    public static double getLastClientTickMillis() { return lastClientTickMillis; }
     public static long getMeasuredTicks() { return measuredTicks; }
     public static LightingMetrics.Snapshot getLightingMetrics() { return LightingMetrics.snapshot(); }
 }
