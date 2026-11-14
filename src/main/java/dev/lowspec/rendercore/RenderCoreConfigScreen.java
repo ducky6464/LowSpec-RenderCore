@@ -149,9 +149,9 @@ public final class RenderCoreConfigScreen extends Screen {
                         c.experienceOrbRenderDistance, c.armorStandRenderDistance};
                 drawValues(context, values, 109, 27);
             } else if (page == 1) {
-                drawValues(context, new int[]{c.blockEntityRenderDistance, c.maxParticlesPerTick}, 139, 30);
+                drawValues(context, new int[]{c.blockEntityRenderDistance, c.maxParticlesPerTick}, 118, 60);
             } else {
-                drawValues(context, new int[]{c.chunkRebuildsPerTick, c.chunkUploadsPerFrame}, 139, 30);
+                drawValues(context, new int[]{c.chunkRebuildsPerTick, c.chunkUploadsPerFrame}, 118, 60);
             }
         }
         super.render(context, mouseX, mouseY, delta);
