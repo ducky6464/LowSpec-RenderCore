@@ -18,7 +18,7 @@ Implemented:
 - Mixin instrumentation around vanilla `LightingProvider.doLightUpdates()`, recording call count, total time, and vanilla-reported update count.
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Optional per-client-tick particle admission budget to limit sudden particle bursts. This limits newly admitted particles per tick; it does not remove existing particles or change server-side effects.
-- Optional block-entity render-distance culling at render-state creation time, with beacon rendering preserved.
+- Optional block-entity render-distance culling at render-state creation time, measured from the active camera (including spectator/free-camera views), with beacon rendering preserved.
 - Optional in-game performance HUD showing client tick time, CPU-side render average/p95, lighting timing, CPU time spent scheduling visible chunk updates, live chunk task/upload queue counts, free chunk buffers, and particle admissions. The HUD is disabled by default and can be toggled in Mod Menu.
 - Independent distance values for each supported entity category.
 - GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
@@ -43,7 +43,6 @@ The lighting and chunk instrumentation only measure vanilla work. Chunk update t
 
 Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
-- Chunk mesh/rebuild optimization.
 - Chunk mesh/rebuild optimization.
 - Actual GPU time, display-present frame time, and GPU metrics.
 - In-game compatibility and performance testing across hardware.
