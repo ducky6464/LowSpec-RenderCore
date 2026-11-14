@@ -13,7 +13,9 @@
     "WorldRendererInvoker",
     "ChunkBuilderUploadPacingMixin",
     "SectionBuilderMetricsMixin",
-    "ChunkRendererRegionStateCacheMixin"
+    "ChunkRendererRegionStateCacheMixin",
+    "ChunkRendererRegionInvoker",
+    "RenderedChunkAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
