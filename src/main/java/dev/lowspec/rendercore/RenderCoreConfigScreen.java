@@ -26,7 +26,7 @@ public final class RenderCoreConfigScreen extends Screen {
         int center = width / 2;
         addDrawable((context, mouseX, mouseY, delta) ->
                 context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 18, 0xFFFFFF));
-        int tabWidth = Math.min(58, Math.max(42, (width - 20) / PAGES.length));
+        int tabWidth = Math.min(82, Math.max(60, (width - 20) / PAGES.length));
         int totalWidth = tabWidth * PAGES.length;
         int tabX = center - totalWidth / 2;
         for (int i = 0; i < PAGES.length; i++) {
