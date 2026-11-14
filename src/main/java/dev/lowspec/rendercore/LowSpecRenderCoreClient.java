@@ -177,7 +177,20 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         long tickStart = currentClientTickStartNanos;
         if (config == null || !config.lightingUpdatePacingEnabled || tickStart == 0L) return false;
         if (tickStart == forceLightingTickStart) return false;
-        if (System.nanoTime() - tickStart < 40_000_000L) return false;
+        long deferThresholdNanos = 40_000_000L;
+        // Sustained expensive render/mesh work lowers the threshold, but the
+        // existing forced pass still guarantees lighting cannot be postponed forever.
+        RenderFrameMetrics.Snapshot render = RenderFrameMetrics.snapshot();
+        if (render.samples() >= 10 && render.p95RenderMillis() >= 50.0) {
+            deferThresholdNanos = 25_000_000L;
+        }
+        if (config.chunkDiagnosticsEnabled) {
+            ChunkMeshMetrics.Snapshot mesh = ChunkMeshMetrics.snapshot();
+            if (mesh.samples() >= 10 && mesh.p95Millis() >= 30.0) {
+                deferThresholdNanos = Math.min(deferThresholdNanos, 25_000_000L);
+            }
+        }
+        if (System.nanoTime() - tickStart < deferThresholdNanos) return false;
         if (tickStart != lastLightingDeferredTickStart) {
             lastLightingDeferredTickStart = tickStart;
             consecutiveLightingDeferredTicks++;
