@@ -10,9 +10,9 @@ import java.util.Properties;
 /** Player-owned settings. Nothing is changed automatically. */
 public final class RenderCoreConfig {
     private static final String FILE_NAME = "lowspec-rendercore.properties";
-    public boolean diagnosticsEnabled = true;
-    public boolean lightingDiagnosticsEnabled = true;
-    public boolean chunkDiagnosticsEnabled = true;
+    public boolean diagnosticsEnabled = false;
+    public boolean lightingDiagnosticsEnabled = false;
+    public boolean chunkDiagnosticsEnabled = false;
     public boolean chunkSchedulingEnabled = true;
     public int chunkRebuildsPerTick = 128;
     public boolean entityDistanceCullingEnabled = true;
@@ -40,9 +40,9 @@ public final class RenderCoreConfig {
         Properties p = new Properties();
         try (InputStream in = Files.newInputStream(file)) {
             p.load(in);
-            config.diagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.enabled", "true"));
-            config.lightingDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.lighting", "true"));
-            config.chunkDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.chunks", "true"));
+            config.diagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.enabled", "false"));
+            config.lightingDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.lighting", "false"));
+            config.chunkDiagnosticsEnabled = Boolean.parseBoolean(p.getProperty("diagnostics.chunks", "false"));
             config.chunkSchedulingEnabled = Boolean.parseBoolean(p.getProperty("chunks.scheduler_enabled", "true"));
             config.chunkRebuildsPerTick = bounded(p.getProperty("chunks.rebuilds_per_tick", "128"), 128, 16, 512);
             config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "true"));
