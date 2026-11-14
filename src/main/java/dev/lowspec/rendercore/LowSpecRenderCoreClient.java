@@ -39,6 +39,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                 dispatcher.register(ClientCommandManager.literal("rendercore")
                         .then(ClientCommandManager.literal("stats").executes(context -> {
                             LightingMetrics.Snapshot light = getLightingMetrics();
+                            ChunkUpdateMetrics.Snapshot chunks = ChunkUpdateMetrics.snapshot();
                             context.getSource().sendFeedback(Text.literal(
                                     "LowSpec RenderCore | Average client tick: "
                                             + String.format(java.util.Locale.ROOT, "%.2f ms", getAverageClientTickMillis())
@@ -54,6 +55,10 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Average call: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms", light.averageMillisPerCall())
                                             + " | Vanilla updates reported: " + light.reportedUpdates()));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Chunk update CPU time: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms avg / %.3f ms p95", chunks.averageMillis(), chunks.p95Millis())
+                                            + " | Samples: " + chunks.samples()));
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
