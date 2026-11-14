@@ -11,7 +11,8 @@
     "WorldRendererChunkMetricsMixin",
     "WorldRendererChunkSchedulerMixin",
     "WorldRendererInvoker",
-    "ChunkBuilderUploadPacingMixin"
+    "ChunkBuilderUploadPacingMixin",
+    "SectionBuilderMetricsMixin"
   ],
   "injectors": {
     "defaultRequire": 1
