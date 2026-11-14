@@ -32,6 +32,12 @@ public abstract class SectionBuilderMetricsMixin {
         long start = diagnostics ? System.nanoTime() : 0L;
         lowspec$meshBuildStartNanos.set(start);
 
+        if (LowSpecRenderCoreClient.CONFIG != null
+                && LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) {
+            ChunkRegionStateCache.beginSection(region,
+                    sectionPos.getSectionX(), sectionPos.getSectionY(), sectionPos.getSectionZ());
+        }
+
         if (LowSpecRenderCoreClient.CONFIG == null
                 || !LowSpecRenderCoreClient.CONFIG.chunkEmptySectionFastPathEnabled) return;
 
