@@ -6,12 +6,13 @@ import net.minecraft.util.math.BlockPos;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Pass-scoped cache for repeated block-state reads during vanilla light propagation.
- * A small fixed table avoids allocations and is invalidated at the start of every pass.
+ * Pass-scoped, two-way set-associative cache for repeated block-state reads
+ * during vanilla light propagation. Every pass receives a fresh generation.
  */
 public final class LightingStateCache {
-    private static final int SIZE = 2048;
-    private static final int MASK = SIZE - 1;
+    private static final int SET_COUNT = 1024;
+    private static final int ENTRY_COUNT = SET_COUNT * 2;
+    private static final int MASK = SET_COUNT - 1;
     private static final ThreadLocal<Cache> LOCAL = ThreadLocal.withInitial(Cache::new);
     private static final LongAdder HITS = new LongAdder();
     private static final LongAdder MISSES = new LongAdder();
@@ -25,10 +26,15 @@ public final class LightingStateCache {
         Cache cache = LOCAL.get();
         if (!cache.active) return null;
         long key = pos.asLong();
-        int slot = mix(key) & MASK;
-        if (cache.generations[slot] == cache.generation && cache.positions[slot] == key) {
+        int first = mix(key) & MASK;
+        int second = first + SET_COUNT;
+        if (cache.generations[first] == cache.generation && cache.positions[first] == key) {
             HITS.increment();
-            return cache.states[slot];
+            return cache.states[first];
+        }
+        if (cache.generations[second] == cache.generation && cache.positions[second] == key) {
+            HITS.increment();
+            return cache.states[second];
         }
         MISSES.increment();
         return null;
@@ -38,10 +44,21 @@ public final class LightingStateCache {
         Cache cache = LOCAL.get();
         if (!cache.active || state == null) return;
         long key = pos.asLong();
-        int slot = mix(key) & MASK;
-        cache.positions[slot] = key;
-        cache.states[slot] = state;
-        cache.generations[slot] = cache.generation;
+        int set = mix(key) & MASK;
+        int first = set;
+        int second = set + SET_COUNT;
+        int target;
+        if (cache.generations[first] == cache.generation && cache.positions[first] == key) {
+            target = first;
+        } else if (cache.generations[second] == cache.generation && cache.positions[second] == key) {
+            target = second;
+        } else {
+            target = cache.replaceSecond[set] ? second : first;
+            cache.replaceSecond[set] = !cache.replaceSecond[set];
+        }
+        cache.positions[target] = key;
+        cache.states[target] = state;
+        cache.generations[target] = cache.generation;
     }
 
     public static Snapshot snapshot() {
@@ -61,9 +78,10 @@ public final class LightingStateCache {
     }
 
     private static final class Cache {
-        private final long[] positions = new long[SIZE];
-        private final BlockState[] states = new BlockState[SIZE];
-        private final int[] generations = new int[SIZE];
+        private final long[] positions = new long[ENTRY_COUNT];
+        private final BlockState[] states = new BlockState[ENTRY_COUNT];
+        private final int[] generations = new int[ENTRY_COUNT];
+        private final boolean[] replaceSecond = new boolean[SET_COUNT];
         private int generation;
         private boolean active;
 
