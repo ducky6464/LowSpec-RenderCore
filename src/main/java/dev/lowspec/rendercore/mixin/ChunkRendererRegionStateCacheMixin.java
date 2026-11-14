@@ -3,6 +3,7 @@ package dev.lowspec.rendercore.mixin;
 import dev.lowspec.rendercore.ChunkRegionStateCache;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import net.minecraft.block.BlockState;
+import net.minecraft.fluid.FluidState;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
 import net.minecraft.util.math.BlockPos;
 import org.spongepowered.asm.mixin.Mixin;
@@ -33,4 +34,16 @@ public abstract class ChunkRendererRegionStateCacheMixin {
                 || !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) return;
         ChunkRegionStateCache.store((ChunkRendererRegion) (Object) this, pos, cir.getReturnValue());
     }
+    @Inject(
+            method = "getFluidState(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/fluid/FluidState;",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void lowspec$lookupCachedFluidState(BlockPos pos, CallbackInfoReturnable<FluidState> cir) {
+        if (LowSpecRenderCoreClient.CONFIG == null
+                || !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled) return;
+        BlockState cached = ChunkRegionStateCache.lookup((ChunkRendererRegion) (Object) this, pos);
+        if (cached != null) cir.setReturnValue(cached.getFluidState());
+    }
+
 }
