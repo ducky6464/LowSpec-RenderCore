@@ -104,6 +104,17 @@ public final class RenderCoreConfigScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkBudget(16))
                 .dimensions(center + 112, chunkBudgetY, 28, 20).build());
 
+        int uploadY = chunkBudgetY + 25;
+        addDrawableChild(ButtonWidget.builder(chunkUploadText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled = !LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled;
+            saveConfig();
+            button.setMessage(chunkUploadText());
+        }).dimensions(center - 145, uploadY, 140, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustChunkUploads(-1))
+                .dimensions(center + 5, uploadY, 28, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkUploads(1))
+                .dimensions(center + 112, uploadY, 28, 20).build());
+
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 30, 200, 20).build());
     }
@@ -131,6 +142,9 @@ public final class RenderCoreConfigScreen extends Screen {
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("Chunk rebuild budget: " + LowSpecRenderCoreClient.CONFIG.chunkRebuildsPerTick + " / tick"),
                 width / 2 + 55, rowStart + CATEGORIES.length * 25 + 139, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal("Chunk uploads: " + LowSpecRenderCoreClient.CONFIG.chunkUploadsPerFrame + " / frame"),
+                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 164, 0xE0E0E0);
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -185,6 +199,16 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private Text chunkSchedulerText() {
         return Text.literal("Chunk pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled ? "ON" : "OFF"));
+    }
+
+    private void adjustChunkUploads(int amount) {
+        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        c.chunkUploadsPerFrame = Math.max(1, Math.min(64, c.chunkUploadsPerFrame + amount));
+        saveConfig();
+    }
+
+    private Text chunkUploadText() {
+        return Text.literal("Upload pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkUploadPacingEnabled ? "ON" : "OFF"));
     }
 
     private Text hudText() {
