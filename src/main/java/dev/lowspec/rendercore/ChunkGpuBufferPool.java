@@ -54,6 +54,7 @@ public final class ChunkGpuBufferPool {
     public static void release(GpuBuffer buffer) {
         if (buffer == null || buffer.isClosed()) return;
         if (!enabled() || !RenderSystem.isOnRenderThread()
+                || (buffer.usage() & GpuBuffer.USAGE_COPY_DST) == 0
                 || buffer.size() <= 0L || buffer.size() > MAX_RETAINED_BUFFER_BYTES
                 || AVAILABLE.size() >= MAX_ENTRIES
                 || pooledBytes + buffer.size() > MAX_POOL_BYTES) {
@@ -65,7 +66,8 @@ public final class ChunkGpuBufferPool {
     }
 
     private static GpuBuffer acquire(int usage, long requiredBytes) {
-        if (requiredBytes <= 0L || requiredBytes > MAX_RETAINED_BUFFER_BYTES) return null;
+        if (requiredBytes <= 0L || requiredBytes > MAX_RETAINED_BUFFER_BYTES
+                || (usage & GpuBuffer.USAGE_COPY_DST) == 0) return null;
         GpuBuffer best = null;
         for (Iterator<GpuBuffer> iterator = AVAILABLE.iterator(); iterator.hasNext();) {
             GpuBuffer candidate = iterator.next();
