@@ -86,11 +86,23 @@ public final class RenderCoreConfigScreen extends Screen {
         addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustBlockEntityDistance(16))
                 .dimensions(center + 112, blockEntityY, 28, 20).build());
 
+        int hudY = blockEntityY + 25;
         addDrawableChild(ButtonWidget.builder(hudText(), button -> {
             LowSpecRenderCoreClient.CONFIG.performanceHudEnabled = !LowSpecRenderCoreClient.CONFIG.performanceHudEnabled;
             saveConfig();
             button.setMessage(hudText());
-        }).dimensions(center - 145, blockEntityY + 25, 140, 20).build());
+        }).dimensions(center - 145, hudY, 140, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(chunkSchedulerText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled = !LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled;
+            saveConfig();
+            button.setMessage(chunkSchedulerText());
+        }).dimensions(center + 5, hudY, 140, 20).build());
+        int chunkBudgetY = hudY + 25;
+        addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustChunkBudget(-16))
+                .dimensions(center + 5, chunkBudgetY, 28, 20).build());
+        addDrawableChild(ButtonWidget.builder(Text.literal("+"), button -> adjustChunkBudget(16))
+                .dimensions(center + 112, chunkBudgetY, 28, 20).build());
 
         addDrawableChild(ButtonWidget.builder(Text.literal("Done"), button -> close())
                 .dimensions(center - 100, this.height - 30, 200, 20).build());
@@ -116,6 +128,9 @@ public final class RenderCoreConfigScreen extends Screen {
         context.drawCenteredTextWithShadow(textRenderer,
                 Text.literal("Block entity distance: " + LowSpecRenderCoreClient.CONFIG.blockEntityRenderDistance + " blocks"),
                 width / 2 + 55, rowStart + CATEGORIES.length * 25 + 89, 0xE0E0E0);
+        context.drawCenteredTextWithShadow(textRenderer,
+                Text.literal("Chunk rebuild budget: " + LowSpecRenderCoreClient.CONFIG.chunkRebuildsPerTick + " / tick"),
+                width / 2 + 55, rowStart + CATEGORIES.length * 25 + 139, 0xE0E0E0);
         super.render(context, mouseX, mouseY, delta);
     }
 
@@ -162,7 +177,7 @@ public final class RenderCoreConfigScreen extends Screen {
         saveConfig();
     }
 
-    private Text hudText() {
+    private void adjustChunkBudget(int amount) {\n        RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;\n        c.chunkRebuildsPerTick = Math.max(16, Math.min(512, c.chunkRebuildsPerTick + amount));\n        saveConfig();\n    }\n\n    private Text chunkSchedulerText() {\n        return Text.literal("Chunk pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled ? "ON" : "OFF"));\n    }\n\n    private Text hudText() {
         return Text.literal("Performance HUD: " + (LowSpecRenderCoreClient.CONFIG.performanceHudEnabled ? "ON" : "OFF"));
     }
 
