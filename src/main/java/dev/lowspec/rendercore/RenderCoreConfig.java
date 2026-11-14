@@ -18,6 +18,7 @@ public final class RenderCoreConfig {
     public int chunkRebuildsPerTick = 128;
     public boolean chunkUploadPacingEnabled = true;
     public boolean chunkMeshStateCacheEnabled = true;
+    public boolean chunkMeshModelPartsCacheEnabled = true;
     public boolean chunkEmptySectionFastPathEnabled = true;
     public boolean chunkGpuBufferPoolEnabled = true;
     public boolean lightingStateCacheEnabled = true;
@@ -56,6 +57,7 @@ public final class RenderCoreConfig {
             config.chunkRebuildsPerTick = bounded(p.getProperty("chunks.rebuilds_per_tick", "128"), 128, 16, 512);
             config.chunkUploadPacingEnabled = Boolean.parseBoolean(p.getProperty("chunks.upload_pacing_enabled", "true"));
             config.chunkMeshStateCacheEnabled = Boolean.parseBoolean(p.getProperty("chunks.mesh_state_cache_enabled", "true"));
+            config.chunkMeshModelPartsCacheEnabled = Boolean.parseBoolean(p.getProperty("chunks.mesh_model_parts_cache_enabled", "true"));
             config.chunkEmptySectionFastPathEnabled = Boolean.parseBoolean(p.getProperty("chunks.empty_section_fast_path_enabled", "true"));
             config.chunkGpuBufferPoolEnabled = Boolean.parseBoolean(p.getProperty("chunks.gpu_buffer_pool_enabled", "true"));
             config.lightingStateCacheEnabled = Boolean.parseBoolean(p.getProperty("lighting.state_cache_enabled", "true"));
@@ -90,6 +92,7 @@ public final class RenderCoreConfig {
         p.setProperty("chunks.rebuilds_per_tick", Integer.toString(chunkRebuildsPerTick));
         p.setProperty("chunks.upload_pacing_enabled", Boolean.toString(chunkUploadPacingEnabled));
         p.setProperty("chunks.mesh_state_cache_enabled", Boolean.toString(chunkMeshStateCacheEnabled));
+        p.setProperty("chunks.mesh_model_parts_cache_enabled", Boolean.toString(chunkMeshModelPartsCacheEnabled));
         p.setProperty("chunks.empty_section_fast_path_enabled", Boolean.toString(chunkEmptySectionFastPathEnabled));
         p.setProperty("chunks.gpu_buffer_pool_enabled", Boolean.toString(chunkGpuBufferPoolEnabled));
         p.setProperty("lighting.state_cache_enabled", Boolean.toString(lightingStateCacheEnabled));
