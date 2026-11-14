@@ -91,13 +91,20 @@ public final class RenderCoreConfigScreen extends Screen {
             LowSpecRenderCoreClient.CONFIG.performanceHudEnabled = !LowSpecRenderCoreClient.CONFIG.performanceHudEnabled;
             saveConfig();
             button.setMessage(hudText());
-        }).dimensions(center - 145, hudY, 140, 20).build());
+        }).dimensions(center - 145, hudY, 90, 20).build());
+
+        addDrawableChild(ButtonWidget.builder(meshCacheText(), button -> {
+            LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled =
+                    !LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled;
+            saveConfig();
+            button.setMessage(meshCacheText());
+        }).dimensions(center - 50, hudY, 90, 20).build());
 
         addDrawableChild(ButtonWidget.builder(chunkSchedulerText(), button -> {
             LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled = !LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled;
             saveConfig();
             button.setMessage(chunkSchedulerText());
-        }).dimensions(center + 5, hudY, 140, 20).build());
+        }).dimensions(center + 45, hudY, 90, 20).build());
         int chunkBudgetY = hudY + 25;
         addDrawableChild(ButtonWidget.builder(Text.literal("-"), button -> adjustChunkBudget(-16))
                 .dimensions(center + 5, chunkBudgetY, 28, 20).build());
@@ -205,6 +212,10 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private Text chunkSchedulerText() {
         return Text.literal("Chunk pacing: " + (LowSpecRenderCoreClient.CONFIG.chunkSchedulingEnabled ? "ON" : "OFF"));
+    }
+
+    private Text meshCacheText() {
+        return Text.literal("Mesh cache: " + (LowSpecRenderCoreClient.CONFIG.chunkMeshStateCacheEnabled ? "ON" : "OFF"));
     }
 
     private void adjustChunkUploads(int amount) {
