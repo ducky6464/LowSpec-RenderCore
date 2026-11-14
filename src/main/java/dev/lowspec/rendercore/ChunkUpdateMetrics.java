@@ -1,33 +1,56 @@
 package dev.lowspec.rendercore;
 
-import java.util.Arrays;
-
-/** Rolling CPU time spent preparing/scheduling visible chunk updates. */
+/**
+ * Allocation-light rolling timing metrics. A fixed histogram provides an approximate p95
+ * without sorting or allocating a new array every HUD frame.
+ */
 public final class ChunkUpdateMetrics {
     private static final int CAPACITY = 120;
+    private static final double BUCKET_MILLIS = 0.25;
+    private static final int BUCKET_COUNT = 1025; // 0..256 ms, final bucket is overflow
     private static final long[] SAMPLES = new long[CAPACITY];
+    private static final int[] HISTOGRAM = new int[BUCKET_COUNT];
     private static int next;
     private static int size;
     private static long totalNanos;
 
     private ChunkUpdateMetrics() { }
 
-    public static void record(long nanos) {
+    public static synchronized void record(long nanos) {
         long safe = Math.max(0L, nanos);
-        if (size == CAPACITY) totalNanos -= SAMPLES[next];
-        else size++;
+        if (size == CAPACITY) {
+            long old = SAMPLES[next];
+            totalNanos -= old;
+            HISTOGRAM[bucket(old)]--;
+        } else {
+            size++;
+        }
         SAMPLES[next] = safe;
         totalNanos += safe;
+        HISTOGRAM[bucket(safe)]++;
         next = (next + 1) % CAPACITY;
     }
 
-    public static Snapshot snapshot() {
+    public static synchronized Snapshot snapshot() {
         if (size == 0) return new Snapshot(0, 0.0, 0.0);
-        long[] sorted = Arrays.copyOf(SAMPLES, size);
-        Arrays.sort(sorted);
-        int p95 = Math.min(size - 1, (int) Math.ceil(size * 0.95) - 1);
-        return new Snapshot(size, (double) totalNanos / size / 1_000_000.0,
-                sorted[p95] / 1_000_000.0);
+        int target = (int) Math.ceil(size * 0.95);
+        int cumulative = 0;
+        int percentileBucket = BUCKET_COUNT - 1;
+        for (int i = 0; i < HISTOGRAM.length; i++) {
+            cumulative += HISTOGRAM[i];
+            if (cumulative >= target) {
+                percentileBucket = i;
+                break;
+            }
+        }
+        double p95 = percentileBucket == BUCKET_COUNT - 1
+                ? 256.0 : percentileBucket * BUCKET_MILLIS;
+        return new Snapshot(size, (double) totalNanos / size / 1_000_000.0, p95);
+    }
+
+    private static int bucket(long nanos) {
+        int value = (int) (nanos / 250_000L);
+        return Math.min(BUCKET_COUNT - 1, Math.max(0, value));
     }
 
     public record Snapshot(int samples, double averageMillis, double p95Millis) { }
