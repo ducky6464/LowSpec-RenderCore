@@ -1,12 +1,6 @@
-package dev.lowspec.rendercore;
+package net.minecraft.client.render.chunk;
 
-import dev.lowspec.rendercore.mixin.ChunkRendererRegionInvoker;
-import dev.lowspec.rendercore.mixin.RenderedChunkAccessor;
 import net.minecraft.block.BlockState;
-import net.minecraft.client.render.chunk.ChunkOcclusionData;
-import net.minecraft.client.render.chunk.ChunkRendererRegion;
-import net.minecraft.client.render.chunk.RenderedChunk;
-import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.chunk.PalettedContainer;
 
