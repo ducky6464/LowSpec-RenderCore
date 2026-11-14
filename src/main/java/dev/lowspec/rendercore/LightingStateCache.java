@@ -3,11 +3,18 @@ package dev.lowspec.rendercore;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 
-/** Pass-scoped, direct-mapped cache for block-state reads during light propagation. */
+import java.util.concurrent.atomic.LongAdder;
+
+/**
+ * Pass-scoped cache for repeated block-state reads during vanilla light propagation.
+ * A small fixed table avoids allocations and is invalidated at the start of every pass.
+ */
 public final class LightingStateCache {
-    private static final int SIZE = 256;
+    private static final int SIZE = 2048;
     private static final int MASK = SIZE - 1;
     private static final ThreadLocal<Cache> LOCAL = ThreadLocal.withInitial(Cache::new);
+    private static final LongAdder HITS = new LongAdder();
+    private static final LongAdder MISSES = new LongAdder();
 
     private LightingStateCache() { }
 
@@ -19,8 +26,12 @@ public final class LightingStateCache {
         if (!cache.active) return null;
         long key = pos.asLong();
         int slot = mix(key) & MASK;
-        return cache.generations[slot] == cache.generation && cache.positions[slot] == key
-                ? cache.states[slot] : null;
+        if (cache.generations[slot] == cache.generation && cache.positions[slot] == key) {
+            HITS.increment();
+            return cache.states[slot];
+        }
+        MISSES.increment();
+        return null;
     }
 
     public static void store(BlockPos pos, BlockState state) {
@@ -31,6 +42,13 @@ public final class LightingStateCache {
         cache.positions[slot] = key;
         cache.states[slot] = state;
         cache.generations[slot] = cache.generation;
+    }
+
+    public static Snapshot snapshot() {
+        long hits = HITS.sum();
+        long misses = MISSES.sum();
+        long total = hits + misses;
+        return new Snapshot(hits, misses, total == 0L ? 0.0 : (double) hits / total * 100.0);
     }
 
     private static int mix(long value) {
@@ -58,4 +76,6 @@ public final class LightingStateCache {
             active = true;
         }
     }
+
+    public record Snapshot(long hits, long misses, double hitRatePercent) { }
 }
