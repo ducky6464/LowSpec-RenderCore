@@ -19,7 +19,7 @@ Implemented:
 - Optional client-side entity render-distance culling for players, hostile mobs, passive mobs, villagers, dropped items, projectiles, experience orbs, and armor stands.
 - Optional per-client-tick particle admission budget to limit sudden particle bursts. This limits newly admitted particles per tick; it does not remove existing particles or change server-side effects.
 - Optional block-entity render-distance culling at render-state creation time, with beacon rendering preserved.
-- Optional in-game performance HUD showing client tick time, CPU-side render average/p95, lighting timing, and particle admissions. The HUD is disabled by default and can be toggled in Mod Menu.
+- Optional in-game performance HUD showing client tick time, CPU-side render average/p95, lighting timing, particle admissions, and live chunk task/upload queue counts. The HUD is disabled by default and can be toggled in Mod Menu.
 - Independent distance values for each supported entity category.
 - GitHub Actions workflow that successfully compiled the initial project and uploaded its JAR artifact. Newer changes are still being validated by CI.
 
@@ -45,7 +45,7 @@ Not implemented yet:
 - Actual lighting scheduling or propagation optimization.
 - Chunk mesh/rebuild optimization.
 - Chunk mesh/rebuild optimization.
-- GPU time, display-present frame time, and GPU metrics.
+- Actual GPU time, display-present frame time, and GPU metrics.
 - In-game compatibility and performance testing across hardware.
 
 ## Mod Menu settings screen
