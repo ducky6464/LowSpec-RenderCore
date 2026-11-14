@@ -67,6 +67,14 @@ public final class RenderCoreHud {
                     Text.literal("Particles admitted: " + (config.particleBudgetEnabled
                             ? ParticleBudget.getAdmittedThisTick() : "limiter off")),
                     x, y + 99, color);
+            context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("GPU buffer pool: " + ChunkGpuBufferPool.getReuseHits()
+                            + " reuses | " + String.format(java.util.Locale.ROOT, "%.1f MiB",
+                                    ChunkGpuBufferPool.getPooledBytes() / 1048576.0)),
+                    x, y + 110, color);
+            context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("Lighting state cache: " + (config.lightingStateCacheEnabled ? "ON" : "OFF")),
+                    x, y + 121, color);
         });
     }
 }
