@@ -133,11 +133,21 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether adaptive visibility: "
+                                            + (CONFIG.adaptiveEntityVisibilityEnabled ? "ON" : "OFF")
+                                            + " | Entity candidates/frame: " + AdaptiveEntityVisibility.getLastCandidateCount()
+                                            + " | Non-player distance scale: "
+                                            + String.format(java.util.Locale.ROOT, "%.0f%%",
+                                                    AdaptiveEntityVisibility.getDistanceScale() * 100.0)));
                             return 1;
                         }))
                         .then(ClientCommandManager.literal("culling")
                                 .then(ClientCommandManager.literal("on").executes(context -> setCulling(context.getSource(), true)))
                                 .then(ClientCommandManager.literal("off").executes(context -> setCulling(context.getSource(), false))))
+                        .then(ClientCommandManager.literal("adaptive")
+                                .then(ClientCommandManager.literal("on").executes(context -> setAdaptiveVisibility(context.getSource(), true)))
+                                .then(ClientCommandManager.literal("off").executes(context -> setAdaptiveVisibility(context.getSource(), false))))
                         .then(ClientCommandManager.literal("distance")
                                 .then(distanceCommand("players"))
                                 .then(distanceCommand("hostile"))
@@ -187,6 +197,17 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             source.sendFeedback(Text.literal("Render distance for " + category + " set to " + value + " blocks."));
         } catch (IOException exception) {
             source.sendFeedback(Text.literal("Could not save LowSpec RenderCore settings: " + exception.getMessage()));
+        }
+        return 1;
+    }
+
+    private static int setAdaptiveVisibility(FabricClientCommandSource source, boolean enabled) {
+        CONFIG.adaptiveEntityVisibilityEnabled = enabled;
+        try {
+            CONFIG.save(FabricLoader.getInstance().getConfigDir());
+            source.sendFeedback(Text.literal("Aether adaptive entity visibility: " + (enabled ? "ON" : "OFF")));
+        } catch (IOException exception) {
+            source.sendFeedback(Text.literal("Could not save Aether settings: " + exception.getMessage()));
         }
         return 1;
     }
