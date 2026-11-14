@@ -73,10 +73,18 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "Chunk update CPU time: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg / %.3f ms p95", chunks.averageMillis(), chunks.p95Millis())
                                             + " | Samples: " + chunks.samples()));
+                            ChunkMeshMetrics.Snapshot mesh = ChunkMeshMetrics.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Chunk mesh CPU time: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms avg / %.3f ms p95", mesh.averageMillis(), mesh.p95Millis())
+                                            + " | Samples: " + mesh.samples()));
                             context.getSource().sendFeedback(Text.literal(
                                     "Paced chunk rebuild requests: " + ChunkRenderScheduler.pendingCount()
                                             + " | Scheduler: " + (CONFIG.chunkSchedulingEnabled ? "ON" : "OFF")
                                             + " | Budget ceiling: " + CONFIG.chunkRebuildsPerTick + "/tick"));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Chunk uploads: " + ChunkUploadBudget.getLastEffectiveLimit()
+                                            + "/" + CONFIG.chunkUploadsPerFrame + " per frame (adaptive)"));
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
