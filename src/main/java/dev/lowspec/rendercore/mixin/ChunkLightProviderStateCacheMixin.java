@@ -1,6 +1,7 @@
 package dev.lowspec.rendercore.mixin;
 
 import dev.lowspec.rendercore.LightingStateCache;
+import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import net.minecraft.block.BlockState;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.chunk.light.ChunkLightProvider;
@@ -27,6 +28,7 @@ public abstract class ChunkLightProviderStateCacheMixin {
             cancellable = true
     )
     private void lowspec$lookupLightingBlockState(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
+        if (LowSpecRenderCoreClient.CONFIG == null || !LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled) return;
         BlockState cached = LightingStateCache.lookup(pos);
         if (cached != null) cir.setReturnValue(cached);
     }
@@ -36,6 +38,8 @@ public abstract class ChunkLightProviderStateCacheMixin {
             at = @At("RETURN")
     )
     private void lowspec$storeLightingBlockState(BlockPos pos, CallbackInfoReturnable<BlockState> cir) {
-        LightingStateCache.store(pos, cir.getReturnValue());
+        if (LowSpecRenderCoreClient.CONFIG != null && LowSpecRenderCoreClient.CONFIG.lightingStateCacheEnabled) {
+            LightingStateCache.store(pos, cir.getReturnValue());
+        }
     }
 }
