@@ -36,7 +36,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                 int rebuildBudget = CONFIG.chunkSchedulingEnabled
                         ? ChunkRenderScheduler.adaptiveBudget(CONFIG.chunkRebuildsPerTick, elapsedTickNanos)
                         : 4096;
-                ChunkRenderScheduler.drain(client.worldRenderer, client.world, rebuildBudget);
+                ChunkRenderScheduler.drain(client.worldRenderer, client.world, rebuildBudget, tickStartNanos);
             } else {
                 ChunkRenderScheduler.clear();
             }
