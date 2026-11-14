@@ -7,7 +7,9 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.text.Text;
+import dev.lowspec.rendercore.mixin.WorldRendererInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        // Fail at startup with a clear message instead of crashing later when the
+        // chunk scheduler first drains and casts WorldRenderer to this invoker.
+        if (!WorldRendererInvoker.class.isAssignableFrom(WorldRenderer.class)) {
+            throw new IllegalStateException("WorldRendererInvoker mixin was not applied; chunk rebuild scheduling cannot run safely.");
+        }
+        LOGGER.info("WorldRendererInvoker mixin verified.");
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
         RenderCoreHud.register();
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
