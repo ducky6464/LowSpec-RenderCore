@@ -1,6 +1,7 @@
 package dev.lowspec.rendercore.mixin;
 
 import com.mojang.blaze3d.systems.VertexSorter;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import dev.lowspec.rendercore.ChunkMeshMetrics;
 import dev.lowspec.rendercore.ChunkRegionStateCache;
@@ -12,8 +13,6 @@ import net.minecraft.client.render.BuiltBuffer;
 import net.minecraft.client.render.BlockRenderLayer;
 import net.minecraft.client.render.BlockRenderLayers;
 import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.ChunkOcclusionData;
-import net.minecraft.client.render.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.render.block.BlockModelRenderer;
 import net.minecraft.client.render.block.BlockRenderManager;
@@ -21,6 +20,7 @@ import net.minecraft.client.render.block.entity.BlockEntityRenderManager;
 import net.minecraft.client.render.block.entity.BlockEntityRenderer;
 import net.minecraft.client.render.chunk.BlockBufferAllocatorStorage;
 import net.minecraft.client.render.chunk.ChunkRendererRegion;
+import net.minecraft.client.render.chunk.ChunkOcclusionDataBuilder;
 import net.minecraft.client.render.chunk.EmptySectionFastPath;
 import net.minecraft.client.render.chunk.SectionBuilder;
 import net.minecraft.client.render.model.BlockModelPart;
