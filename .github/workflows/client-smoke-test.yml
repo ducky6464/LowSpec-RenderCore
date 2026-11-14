@@ -29,7 +29,7 @@ jobs:
           export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dlowspec.rendercore.testConfigScreen=true"
           xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
             set -euo pipefail
-            gradle runClient --no-daemon --args="--width 1280 --height 720" > client-smoke.log 2>&1 &
+            gradle runClient --no-daemon > client-smoke.log 2>&1 &
             gradle_pid=$!
             cleanup() {
               kill "$gradle_pid" 2>/dev/null || true
@@ -68,7 +68,7 @@ jobs:
               exit 1
             fi
 
-            xdotool windowactivate --sync "$window_id"
+            xdotool windowfocus --sync "$window_id"
             sleep 3
             xdotool key --clearmodifiers F2
             screenshot=""
