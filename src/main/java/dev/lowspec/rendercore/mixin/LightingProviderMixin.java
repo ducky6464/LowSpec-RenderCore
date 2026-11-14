@@ -13,8 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class LightingProviderMixin {
     @Unique private long lowspec$lightUpdateStartNanos;
 
-    @Inject(method = "doLightUpdates()I", at = @At("HEAD"))
+    @Inject(method = "doLightUpdates()I", at = @At("HEAD"), cancellable = true)
     private void lowspec$beginLightUpdateTiming(CallbackInfoReturnable<Integer> cir) {
+        if (LowSpecRenderCoreClient.shouldDeferLightingUpdates()) {
+            // The lighting queues remain intact; vanilla processes them on a later tick.
+            cir.setReturnValue(0);
+            lowspec$lightUpdateStartNanos = 0L;
+            return;
+        }
         if (LowSpecRenderCoreClient.CONFIG != null
                 && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled
                 && LowSpecRenderCoreClient.CONFIG.lightingDiagnosticsEnabled) {
