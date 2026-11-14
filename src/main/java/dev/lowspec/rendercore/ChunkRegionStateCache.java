@@ -55,7 +55,7 @@ public final class ChunkRegionStateCache {
     }
 
     private static final class Cache {
-        private static final int SIZE = 256;
+        private static final int SIZE = 4096;
         private final long[] keys = new long[SIZE];
         private final BlockState[] values = new BlockState[SIZE];
         private final int[] generations = new int[SIZE];
