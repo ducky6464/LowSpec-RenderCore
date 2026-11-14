@@ -61,9 +61,12 @@ public final class RenderCoreHud {
                             + " / frame (adaptive)"),
                     x, y + 77, color);
             context.drawTextWithShadow(client.textRenderer,
+                    Text.literal("Chunk mesh state cache: " + (config.chunkMeshStateCacheEnabled ? "ON" : "OFF")),
+                    x, y + 88, color);
+            context.drawTextWithShadow(client.textRenderer,
                     Text.literal("Particles admitted: " + (config.particleBudgetEnabled
                             ? ParticleBudget.getAdmittedThisTick() : "limiter off")),
-                    x, y + 88, color);
+                    x, y + 99, color);
         });
     }
 }
