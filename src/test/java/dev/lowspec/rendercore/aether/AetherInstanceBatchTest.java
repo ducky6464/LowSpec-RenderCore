@@ -78,6 +78,31 @@ class AetherInstanceBatchTest {
     }
 
     @Test
+    void rejectsShortTransformsWithoutWriting() {
+        AetherInstanceBatch batch = new AetherInstanceBatch(1);
+        assertFalse(batch.tryAppend(new float[15], 0xFFFFFFFF, 0));
+        assertEquals(0, batch.instanceCount());
+        assertEquals(0, batch.usedBytes());
+        assertEquals(1, batch.overflowCount());
+    }
+
+    @Test
+    void uploadViewIsReadOnlyAndDoesNotChangeStagingPosition() {
+        AetherInstanceBatch batch = new AetherInstanceBatch(1);
+        assertTrue(batch.tryAppend(new float[16], 0x12345678, 3));
+
+        ByteBuffer first = batch.dataForUpload();
+        assertTrue(first.isReadOnly());
+        assertEquals(AetherInstanceBatch.INSTANCE_BYTES, first.remaining());
+        first.getInt();
+
+        ByteBuffer second = batch.dataForUpload();
+        assertEquals(AetherInstanceBatch.INSTANCE_BYTES, second.remaining());
+        assertEquals(0, second.position());
+        assertThrows(java.nio.ReadOnlyBufferException.class, () -> second.putInt(0));
+    }
+
+    @Test
     void rejectsZeroCapacity() {
         assertThrows(IllegalArgumentException.class, () -> new AetherInstanceBatch(0));
     }
