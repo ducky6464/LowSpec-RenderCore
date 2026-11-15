@@ -31,19 +31,18 @@ public abstract class EntityRenderManagerMixin {
             E entity, Frustum frustum, double cameraX, double cameraY, double cameraZ,
             CallbackInfoReturnable<Boolean> cir
     ) {
-        AdaptiveEntityVisibility.recordCandidate(entity instanceof PlayerEntity);
+        boolean player = entity instanceof PlayerEntity;
+        AdaptiveEntityVisibility.recordCandidate(player);
         RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
         if (config == null) return;
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (entity == client.player || entity == client.getCameraEntity()) return;
 
-        // AEV preserves the local player and camera target, but may hide distant
-        // remote players and other entities when measured frame pressure persists.
         double adaptiveScale = config.adaptiveEntityVisibilityEnabled
                 ? AdaptiveEntityVisibility.getDistanceScale() : 1.0;
         int maxDistance = -1;
-        if (entity instanceof PlayerEntity) {
+        if (player) {
             maxDistance = config.playerRenderDistance;
         } else if (entity instanceof VillagerEntity) {
             maxDistance = config.villagerRenderDistance;
@@ -64,9 +63,10 @@ public abstract class EntityRenderManagerMixin {
         if (maxDistance < 0) return;
         if (!config.entityDistanceCullingEnabled && adaptiveScale >= 1.0) return;
         if (config.adaptiveEntityVisibilityEnabled || config.entityDistanceCullingEnabled) {
-            int minimumDistance = entity instanceof PlayerEntity ? 24 : 8;
-            maxDistance = (int) Math.max(minimumDistance,
-                    Math.floor(maxDistance * (config.adaptiveEntityVisibilityEnabled ? adaptiveScale : 1.0)));
+            int minimumDistance = player ? 24 : 8;
+            maxDistance = AdaptiveEntityVisibility.scaledDistance(
+                    maxDistance, minimumDistance,
+                    config.adaptiveEntityVisibilityEnabled ? adaptiveScale : 1.0);
         }
         if (entity.squaredDistanceTo(cameraX, cameraY, cameraZ) > (double) maxDistance * maxDistance) {
             cir.setReturnValue(false);

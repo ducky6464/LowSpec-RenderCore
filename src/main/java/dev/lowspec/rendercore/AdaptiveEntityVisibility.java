@@ -10,8 +10,10 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public final class AdaptiveEntityVisibility {
     private static final LongAdder candidates = new LongAdder();
+    private static final LongAdder playerCandidates = new LongAdder();
     private static volatile double distanceScale = 1.0;
     private static volatile int lastCandidates;
+    private static volatile int lastPlayerCandidates;
     private static int overloadedFrames;
     private static int recoveryFrames;
 
@@ -21,16 +23,20 @@ public final class AdaptiveEntityVisibility {
     private AdaptiveEntityVisibility() { }
 
     public static void beginFrame() {
-        // LongAdder avoids a data race if visibility checks occur on a worker.
+        // Visibility checks can run on worker threads; LongAdder avoids a
+        // contended global lock on the hot path.
         candidates.sumThenReset();
+        playerCandidates.sumThenReset();
     }
 
     public static void recordCandidate(boolean player) {
         candidates.increment();
+        if (player) playerCandidates.increment();
     }
 
     public static void finishFrame() {
         lastCandidates = (int) Math.min(Integer.MAX_VALUE, candidates.sumThenReset());
+        lastPlayerCandidates = (int) Math.min(Integer.MAX_VALUE, playerCandidates.sumThenReset());
         RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
         if (config == null || !config.adaptiveEntityVisibilityEnabled) {
             distanceScale = 1.0;
@@ -64,11 +70,19 @@ public final class AdaptiveEntityVisibility {
         }
     }
 
-    public static double getDistanceScale() {
-        return distanceScale;
+    /**
+     * Applies adaptive scaling without ever exceeding the user's configured
+     * distance. A minimum protects nearby entities only when the configured
+     * distance itself is at least that large.
+     */
+    public static int scaledDistance(int configuredDistance, int preferredMinimum, double scale) {
+        if (configuredDistance <= 0) return configuredDistance;
+        int safeMinimum = Math.min(configuredDistance, Math.max(0, preferredMinimum));
+        int scaled = (int) Math.floor(configuredDistance * Math.max(0.0, Math.min(1.0, scale)));
+        return Math.min(configuredDistance, Math.max(safeMinimum, scaled));
     }
 
-    public static int getLastCandidateCount() {
-        return lastCandidates;
-    }
+    public static double getDistanceScale() { return distanceScale; }
+    public static int getLastCandidateCount() { return lastCandidates; }
+    public static int getLastPlayerCandidateCount() { return lastPlayerCandidates; }
 }
