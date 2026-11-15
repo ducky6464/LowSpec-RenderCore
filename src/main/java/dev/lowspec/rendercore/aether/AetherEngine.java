@@ -21,6 +21,9 @@ public final class AetherEngine {
 
     public static void beginFrame() {
         INSTANCE_BATCH.beginFrame();
+        // This reference is valid only for the frame whose upload completed.
+        // Never expose a previous frame's ring slot after it may be recycled.
+        lastUploadedInstanceBuffer = null;
         if (!initialized) initialize();
         AetherBackend active = backend;
         if (active != null) active.beginFrame();
