@@ -43,7 +43,7 @@ public abstract class EntityRenderProfilingMixin {
                                     net.minecraft.client.util.math.MatrixStack matrices,
                                     net.minecraft.client.render.command.OrderedRenderCommandQueue queue,
                                     CallbackInfo ci) {
-        aether$renderStart = EntityRenderMetrics.beginRender();
+        aether$renderStart = EntityRenderMetrics.beginEnqueue();
         aether$renderPlayer = state.entityType == EntityType.PLAYER;
     }
 
@@ -55,7 +55,7 @@ public abstract class EntityRenderProfilingMixin {
                                   net.minecraft.client.util.math.MatrixStack matrices,
                                   net.minecraft.client.render.command.OrderedRenderCommandQueue queue,
                                   CallbackInfo ci) {
-        EntityRenderMetrics.endRender(aether$renderStart, aether$renderPlayer);
+        EntityRenderMetrics.endEnqueue(aether$renderStart, aether$renderPlayer);
         aether$renderStart = 0L;
     }
 }
