@@ -38,7 +38,7 @@ public abstract class GameRendererMetricsMixin {
                     && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled) {
                 RenderFrameMetrics.record(elapsed);
             }
-            AdaptiveEntityVisibility.finishFrame(elapsed);
+            AdaptiveEntityVisibility.finishFrame();
             lowspec$renderStartNanos = 0L;
         }
     }
