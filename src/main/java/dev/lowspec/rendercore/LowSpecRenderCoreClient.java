@@ -115,6 +115,13 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageExtractionMillisPerFrame())
                                             + " | Avg command enqueue/frame: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageEnqueueMillisPerFrame())));
+                            EntityGpuMetrics.Snapshot gpu = EntityGpuMetrics.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "RenderDispatcher GPU time: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms avg (%.3f ms last)",
+                                                    gpu.averageMillis(), gpu.lastMillis())
+                                            + " | Samples: " + gpu.samples()
+                                            + " | Query available: " + gpu.querySupported()));
                             context.getSource().sendFeedback(Text.literal(
                                     "RenderDispatcher CPU dispatch: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg/frame (%.3f ms last)",
