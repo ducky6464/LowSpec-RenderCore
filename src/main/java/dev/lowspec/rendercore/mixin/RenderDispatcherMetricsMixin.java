@@ -1,6 +1,7 @@
 package dev.lowspec.rendercore.mixin;
 
 import dev.lowspec.rendercore.EntityRenderMetrics;
+import dev.lowspec.rendercore.EntityGpuMetrics;
 import net.minecraft.client.render.command.RenderDispatcher;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
