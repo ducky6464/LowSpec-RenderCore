@@ -34,12 +34,14 @@ public final class EntityRenderMetrics {
     private static volatile long lastDispatchNanos;
     private static volatile long lastPlayerExtractions;
     private static volatile long lastPlayerEnqueues;
+    private static volatile long lastFrameEntityCpuNanos;
 
     private EntityRenderMetrics() { }
 
     private static boolean enabled() {
         return LowSpecRenderCoreClient.CONFIG != null
-                && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled;
+                && (LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled
+                || LowSpecRenderCoreClient.CONFIG.adaptiveEntityVisibilityEnabled);
     }
 
     public static long beginExtraction() { return enabled() ? System.nanoTime() : 0L; }
@@ -83,6 +85,7 @@ public final class EntityRenderMetrics {
     public static synchronized void finishFrame() {
         extractionNanos[cursor] = frameExtractionNanos.sumThenReset();
         enqueueNanos[cursor] = frameEnqueueNanos.sumThenReset();
+        lastFrameEntityCpuNanos = extractionNanos[cursor] + enqueueNanos[cursor];
         dispatchNanos[cursor] = frameDispatchNanos.sumThenReset();
         cursor = (cursor + 1) % WINDOW;
         if (samples < WINDOW) samples++;
@@ -93,6 +96,8 @@ public final class EntityRenderMetrics {
         lastPlayerExtractions = framePlayerExtractions.sumThenReset();
         lastPlayerEnqueues = framePlayerEnqueues.sumThenReset();
     }
+
+    public static long lastFrameEntityCpuNanos() { return lastFrameEntityCpuNanos; }
 
     public static synchronized Snapshot snapshot() {
         long extraction = 0L;
