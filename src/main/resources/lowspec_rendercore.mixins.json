@@ -6,6 +6,7 @@
     "LightingProviderMixin",
     "EntityRenderManagerMixin",
     "EntityRenderProfilingMixin",
+    "RenderDispatcherMetricsMixin",
     "GameRendererMetricsMixin",
     "ParticleManagerMixin",
     "BlockEntityRenderManagerMixin",

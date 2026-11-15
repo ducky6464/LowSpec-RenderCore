@@ -49,7 +49,7 @@ Proposed modules:
    - Measure entity render-state extraction separately from entity render-command enqueue time. Enqueue time is not GPU draw time and must never be reported as such.
    - The profiler is wired into `EntityRenderManager#getAndUpdateRenderState` and `EntityRenderManager#render`; it records player and total counts plus rolling per-frame CPU timings when general diagnostics are enabled.
    - Counters are thread-safe and per-invocation start timestamps are thread-local. These metrics remain CPU-side and do not measure actual GPU execution.
-   - Next profiling step: measure later command execution / actual GPU pass separately where Minecraft exposes a safe, non-stalling hook.
+   - Added a RenderDispatcher render-command execution timer. It measures CPU dispatch/submission time, not GPU completion; actual GPU execution remains unmeasured. Continue investigating a safe, non-stalling GPU timing path.
    - Record player and non-player counts, average and p95 CPU time, and fallback counts.
    - Use fixed-size/low-allocation metrics.
 
@@ -139,8 +139,8 @@ Proposed modules:
 
 - Aether API/lifecycle foundation and vanilla fallback exist.
 - AEV currently scales configured visibility distances under rough entity/frame pressure; it is not a full priority-based budget.
-- Optional entity extraction and render-command enqueue profiling exists. The latest change makes its counters thread-safe and timing thread-local.
+- Optional entity extraction, enqueue, and RenderDispatcher CPU dispatch profiling exists. The counters are thread-safe and per-invocation timestamps are thread-local. GPU execution time is still not measured.
 - Capability detection now queries the active context's actual OpenGL major/minor version.
 - Commit `8f63031a29d536f75820f777f8d6c04ff02bdc06` contains the profiler/capability corrections. Its build and client startup/settings-screen smoke test are still running.
 - The previous revision's Gradle build passed. Do not treat that as validation of the newer commit.
-- Next: finish CI validation, capture the settings-screen evidence, then design and implement a real player-batch prototype through Minecraft 1.21.11's current render pipeline with strict vanilla fallback.
+- Next: finish CI validation and settings-screen evidence, then use the new dispatch measurements to choose the player-batch prototype boundary. Implement through Minecraft 1.21.11's current render pipeline with strict vanilla fallback.

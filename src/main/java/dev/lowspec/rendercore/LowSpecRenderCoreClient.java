@@ -116,6 +116,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Avg command enqueue/frame: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageEnqueueMillisPerFrame())));
                             context.getSource().sendFeedback(Text.literal(
+                                    "RenderDispatcher CPU dispatch: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms avg/frame (%.3f ms last)",
+                                                    entityMetrics.averageDispatchMillisPerFrame(),
+                                                    entityMetrics.dispatchMillisLastFrame())
+                                            + " | Calls last frame: " + entityMetrics.dispatchCallsLastFrame()));
+                            context.getSource().sendFeedback(Text.literal(
                                     "Lighting calls: " + light.calls()
                                             + " | Average call: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms", light.averageMillisPerCall())
