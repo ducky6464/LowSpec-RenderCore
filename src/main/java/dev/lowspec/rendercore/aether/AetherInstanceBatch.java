@@ -50,6 +50,14 @@ public final class AetherInstanceBatch {
             overflowCount++;
             return false;
         }
+        // Reject non-finite transforms before writing anything so one bad
+        // state cannot poison the packed GPU upload for the whole frame.
+        for (int i = 0; i < FLOATS_PER_TRANSFORM; i++) {
+            if (!Float.isFinite(matrix[i])) {
+                overflowCount++;
+                return false;
+            }
+        }
         if (instanceCount >= capacity) {
             overflowCount++;
             return false;
