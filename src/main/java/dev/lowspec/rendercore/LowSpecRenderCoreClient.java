@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.text.Text;
@@ -40,6 +41,20 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         LOGGER.info("WorldRendererInvoker mixin verified.");
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
         RenderCoreHud.register();
+        // Use the lifecycle event for the visual smoke test. Waiting for a
+        // TitleScreen inside END_CLIENT_TICK can miss startup transitions on
+        // slower virtualized renderers, leaving the test waiting forever.
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            if (Boolean.getBoolean("lowspec.rendercore.testConfigScreen")) {
+                client.execute(() -> {
+                    if (!configScreenTestOpened) {
+                        configScreenTestOpened = true;
+                        client.setScreen(new RenderCoreConfigScreen(client.currentScreen));
+                        LOGGER.info("RENDERCORE_CONFIG_SCREEN_TEST_READY");
+                    }
+                });
+            }
+        });
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             tickStartNanos = System.nanoTime();
             currentClientTickStartNanos = tickStartNanos;
