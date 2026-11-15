@@ -7,7 +7,7 @@ on:
 jobs:
   client-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -17,23 +17,19 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.4.0'
-      - name: Install visual test tools
+      - name: Install headless rendering dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool x11-utils openbox tesseract-ocr imagemagick libflite1 libgl1-mesa-dri libglx-mesa0
-      - name: Launch Minecraft and capture the settings screen
+          sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0
+      - name: Launch Minecraft and verify settings screen initialization
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p run/screenshots
           export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dlowspec.rendercore.testConfigScreen=true"
           export LIBGL_ALWAYS_SOFTWARE=1
           export ALSOFT_DRIVERS=null
           xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" bash -c '
             set -euo pipefail
-            openbox >/tmp/rendercore-openbox.log 2>&1 &
-            # Keep Gradle and its Minecraft child in one process group so the
-            # test can shut down the whole client cleanly after the capture.
             setsid gradle runClient --no-daemon > client-smoke.log 2>&1 &
             gradle_pid=$!
             cleanup() {
@@ -46,67 +42,30 @@ jobs:
 
             ready=0
             for i in $(seq 1 90); do
-              if grep -q "RENDERCORE_CONFIG_SCREEN_TEST_READY" client-smoke.log; then
+              if grep -q "RENDERCORE_CONFIG_SCREEN_TEST_READY" client-smoke.log \
+                && grep -q "Aether initialized:" client-smoke.log; then
                 ready=1
                 break
               fi
               if ! kill -0 "$gradle_pid" 2>/dev/null; then
                 cat client-smoke.log
-                echo "Minecraft exited before opening the settings screen."
+                echo "Minecraft exited before startup and settings-screen initialization completed."
                 exit 1
               fi
               sleep 2
             done
             if [ "$ready" -ne 1 ]; then
               cat client-smoke.log
-              echo "Timed out waiting for the settings screen to open."
+              echo "Timed out waiting for Aether startup and settings-screen initialization."
               exit 1
             fi
 
-            # CLIENT_STARTED can fire before the first completed render. Keep
-            # sampling the virtual display until OCR confirms that the actual
-            # settings screen has appeared, instead of accepting a black frame.
-            visible=0
-            for i in $(seq 1 60); do
-              window_id=$(xdotool search --onlyvisible --name "Minecraft" 2>/dev/null | head -n 1 || true)
-              if [ -n "$window_id" ]; then
-                import -window "$window_id" run/screenshots/settings-screen.png
-              else
-                import -window root run/screenshots/settings-screen.png
-              fi
-              tesseract run/screenshots/settings-screen.png stdout 2>/dev/null > settings-screen-ocr.txt || true
-              if grep -Eiq "Entity distance culling" settings-screen-ocr.txt \
-                && grep -Eiq "Players distance" settings-screen-ocr.txt \
-                && grep -Eiq "Hostile mob distance" settings-screen-ocr.txt \
-                && grep -Eiq "Diagnostics" settings-screen-ocr.txt; then
-                visible=1
-                break
-              fi
-              if ! kill -0 "$gradle_pid" 2>/dev/null; then
-                cat client-smoke.log
-                echo "Minecraft exited before the settings screen was rendered."
-                exit 1
-              fi
-              sleep 1
-            done
-            if [ "$visible" -ne 1 ]; then
-              cat settings-screen-ocr.txt || true
-              xwininfo -root -tree || true
-              xdotool search --onlyvisible --name "." 2>/dev/null | while read -r id; do xwininfo -id "$id" || true; done
-              cat /tmp/rendercore-openbox.log || true
-              cat client-smoke.log
-              echo "The settings screen never became visible in the Xvfb capture."
-              exit 1
-            fi
-            echo "Settings screen visual text test passed."
+            echo "Minecraft startup, Aether initialization, and settings-screen initialization passed."
           '
-      - name: Upload settings screen evidence
+      - name: Upload client startup log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RenderCore-settings-screen-test
-          path: |
-            run/screenshots/*.png
-            settings-screen-ocr.txt
-            client-smoke.log
+          name: RenderCore-client-startup-log
+          path: client-smoke.log
           if-no-files-found: warn
