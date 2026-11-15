@@ -135,11 +135,20 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
         closed = true;
         for (Slot slot : slots) {
             if (slot.fence != null) {
-                // Shutdown is not a frame-critical path. Wait for each slot
-                // before releasing its buffer to avoid freeing in-flight data.
-                slot.fence.awaitCompletion(Long.MAX_VALUE);
+                // Do not allow a broken or lost graphics context to hang
+                // client shutdown forever. If the GPU does not signal within
+                // one second, leave the buffer for device teardown instead
+                // of explicitly releasing a resource that may still be busy.
+                boolean completed = slot.fence.awaitCompletion(1_000_000_000L);
                 slot.fence.close();
                 slot.fence = null;
+                if (!completed) {
+                    LowSpecRenderCoreClient.LOGGER.warn(
+                            "Aether GPU upload slot {} did not finish before shutdown; deferring buffer cleanup to device teardown.",
+                            slot.index);
+                    slot.buffer = null;
+                    continue;
+                }
             }
             if (slot.buffer != null) {
                 slot.buffer.close();
