@@ -47,6 +47,23 @@ class AetherInstanceBatchTest {
     }
 
     @Test
+    void rejectsNonFiniteTransformValuesWithoutPartiallyWriting() {
+        AetherInstanceBatch batch = new AetherInstanceBatch(2);
+        float[] matrix = new float[16];
+        matrix[0] = Float.NaN;
+
+        assertFalse(batch.tryAppend(matrix, 0xFFFFFFFF, 0));
+        assertEquals(0, batch.instanceCount());
+        assertEquals(0, batch.usedBytes());
+
+        matrix[0] = 1.0f;
+        matrix[7] = Float.POSITIVE_INFINITY;
+        assertFalse(batch.tryAppend(matrix, 0xFFFFFFFF, 0));
+        assertEquals(0, batch.instanceCount());
+        assertEquals(2, batch.overflowCount());
+    }
+
+    @Test
     void beginFrameResetsOnlyCurrentFrameData() {
         AetherInstanceBatch batch = new AetherInstanceBatch(2);
         float[] matrix = new float[16];
