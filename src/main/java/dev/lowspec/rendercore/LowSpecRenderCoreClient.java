@@ -147,7 +147,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "Aether adaptive visibility: "
                                             + (CONFIG.adaptiveEntityVisibilityEnabled ? "ON" : "OFF")
                                             + " | Entity candidates/frame: " + AdaptiveEntityVisibility.getLastCandidateCount()
-                                            + " | Non-player distance scale: "
+                                            + " | Adaptive entity distance scale: "
                                             + String.format(java.util.Locale.ROOT, "%.0f%%",
                                                     AdaptiveEntityVisibility.getDistanceScale() * 100.0)));
                             return 1;

@@ -39,7 +39,7 @@ Proposed modules:
    - No direct GL calls from worker threads.
 
 2. **Capability Detection**
-   - Detect actual OpenGL version/extensions at runtime.
+   - Detect actual OpenGL version/extensions at runtime. The current detector reads the context's major/minor version and checks instancing/SSBO feature flags.
    - Tier A: vanilla-compatible fallback.
    - Tier B: instanced attributes where supported.
    - Tier C: advanced buffer/shader features only when explicitly supported.
@@ -47,18 +47,17 @@ Proposed modules:
 
 3. **Entity Extraction and Profiling**
    - Measure entity render-state extraction separately from entity render-command enqueue time. Enqueue time is not GPU draw time and must never be reported as such.
-   - The first profiler implementation is now wired into `EntityRenderManager#getAndUpdateRenderState` and `EntityRenderManager#render`; it records player and total counts plus rolling per-frame CPU timings when general diagnostics are enabled.
-   - Next profiling step: measure the later command execution / actual GPU pass separately where Minecraft exposes a safe hook, and validate whether extraction or draw submission is the real lobby bottleneck.
+   - The profiler is wired into `EntityRenderManager#getAndUpdateRenderState` and `EntityRenderManager#render`; it records player and total counts plus rolling per-frame CPU timings when general diagnostics are enabled.
+   - Counters are thread-safe and per-invocation start timestamps are thread-local. These metrics remain CPU-side and do not measure actual GPU execution.
+   - Next profiling step: measure later command execution / actual GPU pass separately where Minecraft exposes a safe, non-stalling hook.
    - Record player and non-player counts, average and p95 CPU time, and fallback counts.
    - Use fixed-size/low-allocation metrics.
-   - Establish baseline before changing rendering behavior.
 
 4. **Adaptive Entity Visibility (AEV)**
-   - Enforce a configurable visible-entity budget only when measured CPU/GPU pressure warrants it.
-   - Prioritize camera target, nearby players, and entities close to the camera.
-   - Hide low-priority distant entities client-side only.
-   - Use hysteresis and minimum hold times to prevent flicker.
-   - Preserve the local player and camera entity.
+   - The first controller uses entity-candidate volume and whole-frame time as rough pressure signals, then scales configured render distances with hysteresis.
+   - It can reduce the visibility distance of remote players and non-player entities; it preserves the local player and camera entity.
+   - This is not yet a strict visible-entity budget or a distance-prioritized scheduler. Candidate count is approximate, and whole-frame time can include unrelated chunk, GPU, and GUI costs.
+   - Next: prioritize nearby players and camera-relevant entities, add stable minimum hold times, and validate visual behavior in crowded scenes.
    - Never change server state or entity simulation.
 
 5. **Parallel Preparation**
@@ -87,31 +86,31 @@ Proposed modules:
 ## Implementation sequence
 
 ### Phase 0: Establish truth
-- Add entity extraction/render-command timing and entity counts. (Initial implementation added; CI and runtime validation still required.)
-- Capture baseline in an empty area, normal world, 5-10 player scene, and crowded lobby.
+- Add entity extraction/render-command timing and entity counts. (Initial implementation added; current revision is undergoing CI validation.)
+- Capture baseline in an empty area, normal world, 5-10 player scene, and crowded lobby. (Not yet captured on the target Chromebook.)
 - Record average FPS, 1% lows, frame-time p95, CPU render time, and GPU/driver capability where measurable.
 - Keep the existing renderer unchanged.
 
 ### Phase 1: AEV
-- Implement a safe client-only entity budget with priorities, hysteresis, and user settings.
+- Initial adaptive distance-scaling controller added. It is not yet the full priority-based entity budget described above.
 - Verify that nearby players and the camera target remain visible.
-- Benchmark visual impact and frame-time changes.
+- Benchmark visual impact and frame-time changes on the target Chromebook.
 
 ### Phase 2: Aether API foundation
-- Add backend interfaces, capability detection, render-thread assertions, and bounded resource abstractions.
-- Add a vanilla backend first; it must preserve behavior.
+- Backend interfaces, capability detection, render-thread assertions, frame lifecycle, and a vanilla backend added.
+- A real custom GPU entity pipeline is not implemented yet.
 
 ### Phase 3: Player batch prototype
-- Prototype one narrowly scoped player-rendering path.
-- Start with simple compatible body geometry; retain vanilla fallback for every unsupported visual.
+- Not started. Requires a narrow compatibility boundary, immutable player render-state snapshots, and a real 1.21.11 render-pipeline implementation.
+- Retain vanilla fallback for every unsupported visual.
 - Validate on 1.21.11 and the Chromebook's actual OpenGL stack before expanding.
 
 ### Phase 4: Parallel preparation and shared data
-- Add only after profiling identifies preparation as a bottleneck.
+- Not started. Begin only after profiling identifies preparation as a bottleneck.
 - Ensure thread safety and compare worker counts on the 2-core/4-thread CPU.
 
 ### Phase 5: Expansion and hardening
-- Armor, capes, held items, name tags, other entity classes, mod compatibility, resource reloads, world changes, and disconnect/shutdown cleanup.
+- Not started. Includes armor, capes, held items, name tags, other entity classes, mod compatibility, resource reloads, world changes, and disconnect/shutdown cleanup.
 - Run startup, join-world, resource reload, crowded-scene, and long-session tests.
 
 ## Acceptance criteria
@@ -125,7 +124,7 @@ Proposed modules:
 - AEV never changes server state.
 - Visual compatibility is tested rather than assumed.
 - Performance reports compare the same scene, view, settings, and hardware.
-- 3x is an aspiration, not a promise. The project reports measured results only.
+- 3x is an aspiration, not a promise.
 
 ## Key technical references
 
@@ -133,16 +132,15 @@ Proposed modules:
 - Rentities: https://modrinth.com/mod/rentities
 - Yarn 1.21.11 EntityRenderState: https://maven.fabricmc.net/docs/yarn-1.21.11+build.6/net/minecraft/client/render/entity/state/EntityRenderState.html
 - Yarn 1.21.11 EntityRenderManager: https://maven.fabricmc.net/docs/yarn-1.21.11+build.6/net/minecraft/client/render/entity/EntityRenderManager.html
-- Fabric rendering concepts: https://docs.fabricmc.net/develop/rendering/basic-concepts
-- Fabric world extraction/drawing phases: https://docs.fabricmc.net/develop/rendering/world
-
+- Fabric 1.21.11 rendering concepts: https://github.com/FabricMC/fabric-docs/blob/main/versions/1.21.11/develop/rendering/basic-concepts.md
+- Fabric 1.21.11 world extraction/drawing and custom pipeline example: https://github.com/FabricMC/fabric-docs/blob/main/versions/1.21.11/develop/rendering/world.md
 
 ## Current implementation status (2026-11-14)
 
-- Added `AetherCapabilities`, `AetherBackend`, `VanillaBackend`, `AetherRenderThread`, and `AetherEngine` as the first API/lifecycle foundation.
-- Connected Aether frame lifecycle to `GameRenderer`.
-- Expanded AEV to apply adaptive distance scaling to remote players as well as non-player entities, while preserving the local player and camera target and enforcing a closer minimum distance for remote players.
-- Added an AEV toggle to the entity settings page.
-- Added optional diagnostics for entity render-state extraction and render-command enqueue time, including player counts and a rolling 120-frame average. These metrics are CPU-side only; they do not measure actual GPU execution.
-- Latest source revision is still awaiting its GitHub Actions build and client startup/settings test. Do not mark these additions validated until both checks complete.
-- Next: validate profiler mixins, add accurate render-command execution/GPU timing where safe, then design the first narrowly scoped player batch using Minecraft 1.21.11's current render pipeline and a strict vanilla fallback.
+- Aether API/lifecycle foundation and vanilla fallback exist.
+- AEV currently scales configured visibility distances under rough entity/frame pressure; it is not a full priority-based budget.
+- Optional entity extraction and render-command enqueue profiling exists. The latest change makes its counters thread-safe and timing thread-local.
+- Capability detection now queries the active context's actual OpenGL major/minor version.
+- Commit `8f63031a29d536f75820f777f8d6c04ff02bdc06` contains the profiler/capability corrections. Its build and client startup/settings-screen smoke test are still running.
+- The previous revision's Gradle build passed. Do not treat that as validation of the newer commit.
+- Next: finish CI validation, capture the settings-screen evidence, then design and implement a real player-batch prototype through Minecraft 1.21.11's current render pipeline with strict vanilla fallback.
