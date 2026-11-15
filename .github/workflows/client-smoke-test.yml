@@ -20,15 +20,18 @@ jobs:
       - name: Install visual test tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool tesseract-ocr imagemagick libgl1-mesa-dri libglx-mesa0
+          sudo apt-get install -y xvfb xdotool x11-utils openbox tesseract-ocr imagemagick libflite1 libgl1-mesa-dri libglx-mesa0
       - name: Launch Minecraft and capture the settings screen
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p run/screenshots
           export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dlowspec.rendercore.testConfigScreen=true"
-          xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
+          xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" bash -c '
             set -euo pipefail
+            openbox >/tmp/rendercore-openbox.log 2>&1 &
             # Keep Gradle and its Minecraft child in one process group so the
             # test can shut down the whole client cleanly after the capture.
             setsid gradle runClient --no-daemon > client-smoke.log 2>&1 &
@@ -65,7 +68,12 @@ jobs:
             # settings screen has appeared, instead of accepting a black frame.
             visible=0
             for i in $(seq 1 60); do
-              import -window root run/screenshots/settings-screen.png
+              window_id=$(xdotool search --onlyvisible --name "Minecraft" 2>/dev/null | head -n 1 || true)
+              if [ -n "$window_id" ]; then
+                import -window "$window_id" run/screenshots/settings-screen.png
+              else
+                import -window root run/screenshots/settings-screen.png
+              fi
               tesseract run/screenshots/settings-screen.png stdout 2>/dev/null > settings-screen-ocr.txt || true
               if grep -Eiq "Entity distance culling" settings-screen-ocr.txt \
                 && grep -Eiq "Players distance" settings-screen-ocr.txt \
@@ -84,6 +92,8 @@ jobs:
             if [ "$visible" -ne 1 ]; then
               cat settings-screen-ocr.txt || true
               xwininfo -root -tree || true
+              xdotool search --onlyvisible --name "." 2>/dev/null | while read -r id; do xwininfo -id "$id" || true; done
+              cat /tmp/rendercore-openbox.log || true
               cat client-smoke.log
               echo "The settings screen never became visible in the Xvfb capture."
               exit 1
