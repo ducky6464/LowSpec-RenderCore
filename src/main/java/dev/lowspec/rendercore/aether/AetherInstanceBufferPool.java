@@ -4,6 +4,7 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuFence;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
+import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 
 import java.nio.ByteBuffer;
 
@@ -45,7 +46,7 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
 
         int byteCount = batch.usedBytes();
         if (byteCount <= 0 || byteCount > BUFFER_BYTES) {
-            failedUploads++;
+            recordFailure("Invalid Aether instance upload size: " + byteCount, null);
             return null;
         }
 
@@ -65,28 +66,40 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
 
             ByteBuffer source = batch.dataForUpload();
             if (source.remaining() != byteCount) {
-                failedUploads++;
+                recordFailure("Aether staging buffer size did not match its instance count", null);
                 return null;
             }
 
+            // Keep the upload and its fence on the same encoder so their
+            // ordering is explicit. The fence marks completion of this upload.
             CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
             try (GpuBuffer.MappedView mapped = encoder.mapBuffer(
                     slot.buffer.slice(0L, byteCount), false, true)) {
                 mapped.data().put(source);
             }
 
-            // The fence protects this slot from being remapped before the
-            // upload commands have completed. A future draw path must place
-            // its fence after the draw, not rely on this upload fence alone.
-            slot.fence = RenderSystem.getDevice().createCommandEncoder().createFence();
+            slot.fence = encoder.createFence();
             slot.bytes = byteCount;
             successfulUploads++;
             uploadedBytes += byteCount;
             nextSlot = (slot.index + 1) % slots.length;
             return slot.buffer;
         } catch (RuntimeException exception) {
-            failedUploads++;
+            // Do not silently hide driver/API failures. Avoid logging every
+            // frame if a persistent driver problem occurs.
+            recordFailure("Aether instance buffer upload failed", exception);
             return null;
+        }
+    }
+
+    private void recordFailure(String message, RuntimeException exception) {
+        failedUploads++;
+        if (failedUploads == 1 || failedUploads % 100 == 0) {
+            if (exception == null) {
+                LowSpecRenderCoreClient.LOGGER.warn("{} (failures={})", message, failedUploads);
+            } else {
+                LowSpecRenderCoreClient.LOGGER.warn("{} (failures={})", message, failedUploads, exception);
+            }
         }
     }
 
