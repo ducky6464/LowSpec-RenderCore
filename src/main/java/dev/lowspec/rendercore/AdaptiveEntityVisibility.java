@@ -1,12 +1,14 @@
 package dev.lowspec.rendercore;
 
+import java.util.concurrent.atomic.LongAdder;
+
 /**
  * Aether's first adaptive policy. It observes per-frame entity candidate volume
- * and frame time, then adjusts non-player render distance with hysteresis.
- * It never changes world state and never hides the local or remote player.
+ * and frame time, then adjusts render distance with hysteresis. It never changes
+ * world state and never hides the local player or camera entity.
  */
 public final class AdaptiveEntityVisibility {
-    private static int candidates;
+    private static final LongAdder candidates = new LongAdder();
     private static volatile double distanceScale = 1.0;
     private static volatile int lastCandidates;
     private static int overloadedFrames;
@@ -15,22 +17,25 @@ public final class AdaptiveEntityVisibility {
     private AdaptiveEntityVisibility() { }
 
     public static void beginFrame() {
-        candidates = 0;
+        // LongAdder avoids a data race if visibility checks occur on a worker.
+        candidates.sumThenReset();
     }
 
     public static void recordCandidate(boolean player) {
-        candidates++;
+        candidates.increment();
     }
 
     public static void finishFrame(long frameNanos) {
+        lastCandidates = (int) Math.min(Integer.MAX_VALUE, candidates.sumThenReset());
         RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
         if (config == null || !config.adaptiveEntityVisibilityEnabled) {
             distanceScale = 1.0;
+            overloadedFrames = 0;
+            recoveryFrames = 0;
             return;
         }
 
-        lastCandidates = candidates;
-        boolean entityPressure = candidates > config.adaptiveEntityCandidateBudget;
+        boolean entityPressure = lastCandidates > config.adaptiveEntityCandidateBudget;
         boolean framePressure = frameNanos >= 45_000_000L;
         boolean overloaded = entityPressure || framePressure;
 

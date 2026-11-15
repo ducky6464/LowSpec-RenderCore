@@ -1,6 +1,8 @@
 package dev.lowspec.rendercore.aether;
 
 import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GLCapabilities;
 
 /** Immutable snapshot of graphics features exposed by the active OpenGL context. */
@@ -12,8 +14,10 @@ public record AetherCapabilities(
 ) {
     public static AetherCapabilities detect() {
         GLCapabilities gl = GL.getCapabilities();
-        int major = gl.OpenGL43 ? 4 : gl.OpenGL33 ? 3 : gl.OpenGL20 ? 2 : 0;
-        int minor = gl.OpenGL43 ? 3 : gl.OpenGL33 ? 3 : gl.OpenGL20 ? 0 : 0;
+        // Query the actual context version instead of reporting the highest
+        // feature milestone as though it were the exact driver version.
+        int major = GL11.glGetInteger(GL30.GL_MAJOR_VERSION);
+        int minor = GL11.glGetInteger(GL30.GL_MINOR_VERSION);
         return new AetherCapabilities(
                 major,
                 minor,
