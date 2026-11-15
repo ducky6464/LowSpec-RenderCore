@@ -34,17 +34,24 @@ public final class EntityRenderMetrics {
     private static volatile long lastDispatchNanos;
     private static volatile long lastPlayerExtractions;
     private static volatile long lastPlayerEnqueues;
+    private static volatile long lastEntityCpuNanos;
 
     private EntityRenderMetrics() { }
 
-    private static boolean enabled() {
+    private static boolean diagnosticsEnabled() {
         return LowSpecRenderCoreClient.CONFIG != null
                 && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled;
     }
 
-    public static long beginExtraction() { return enabled() ? System.nanoTime() : 0L; }
-    public static long beginEnqueue() { return enabled() ? System.nanoTime() : 0L; }
-    public static long beginDispatch() { return enabled() ? System.nanoTime() : 0L; }
+    private static boolean entityTimingEnabled() {
+        return LowSpecRenderCoreClient.CONFIG != null
+                && (LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled
+                || LowSpecRenderCoreClient.CONFIG.adaptiveEntityVisibilityEnabled);
+    }
+
+    public static long beginExtraction() { return entityTimingEnabled() ? System.nanoTime() : 0L; }
+    public static long beginEnqueue() { return entityTimingEnabled() ? System.nanoTime() : 0L; }
+    public static long beginDispatch() { return diagnosticsEnabled() ? System.nanoTime() : 0L; }
 
     public static void endDispatch(long startNanos) {
         if (startNanos == 0L) return;
@@ -79,17 +86,27 @@ public final class EntityRenderMetrics {
         }
     }
 
+    /** CPU time attributed specifically to entity extraction and command enqueue. */
+    public static long lastFrameEntityCpuNanos() {
+        return lastEntityCpuNanos;
+    }
+
     /** Called once per frame; concurrent worker updates are safely accumulated. */
     public static synchronized void finishFrame() {
-        extractionNanos[cursor] = frameExtractionNanos.sumThenReset();
-        enqueueNanos[cursor] = frameEnqueueNanos.sumThenReset();
-        dispatchNanos[cursor] = frameDispatchNanos.sumThenReset();
+        long extractionFrame = frameExtractionNanos.sumThenReset();
+        long enqueueFrame = frameEnqueueNanos.sumThenReset();
+        long dispatchFrame = frameDispatchNanos.sumThenReset();
+        extractionNanos[cursor] = extractionFrame;
+        enqueueNanos[cursor] = enqueueFrame;
+        dispatchNanos[cursor] = dispatchFrame;
+        lastEntityCpuNanos = extractionFrame + enqueueFrame;
+
         cursor = (cursor + 1) % WINDOW;
         if (samples < WINDOW) samples++;
         lastExtractions = frameExtractions.sumThenReset();
         lastEnqueues = frameEnqueues.sumThenReset();
         lastDispatchCalls = frameDispatchCalls.sumThenReset();
-        lastDispatchNanos = dispatchNanos[cursor == 0 ? WINDOW - 1 : cursor - 1];
+        lastDispatchNanos = dispatchFrame;
         lastPlayerExtractions = framePlayerExtractions.sumThenReset();
         lastPlayerEnqueues = framePlayerEnqueues.sumThenReset();
     }

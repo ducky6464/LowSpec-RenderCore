@@ -3,9 +3,10 @@ package dev.lowspec.rendercore;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * Aether's first adaptive policy. It observes per-frame entity candidate volume
- * and frame time, then adjusts render distance with hysteresis. It never changes
- * world state and never hides the local player or camera entity.
+ * Aether's first adaptive policy. It observes entity candidate volume and
+ * CPU time spent specifically in entity extraction/enqueue, then adjusts
+ * render distance with hysteresis. Unrelated chunk, GUI, and GPU frame costs
+ * do not trigger entity throttling.
  */
 public final class AdaptiveEntityVisibility {
     private static final LongAdder candidates = new LongAdder();
@@ -13,6 +14,9 @@ public final class AdaptiveEntityVisibility {
     private static volatile int lastCandidates;
     private static int overloadedFrames;
     private static int recoveryFrames;
+
+    private static final long ENTITY_OVERLOAD_NANOS = 8_000_000L;
+    private static final long ENTITY_RECOVERY_NANOS = 4_000_000L;
 
     private AdaptiveEntityVisibility() { }
 
@@ -25,7 +29,7 @@ public final class AdaptiveEntityVisibility {
         candidates.increment();
     }
 
-    public static void finishFrame(long frameNanos) {
+    public static void finishFrame() {
         lastCandidates = (int) Math.min(Integer.MAX_VALUE, candidates.sumThenReset());
         RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
         if (config == null || !config.adaptiveEntityVisibilityEnabled) {
@@ -35,9 +39,10 @@ public final class AdaptiveEntityVisibility {
             return;
         }
 
-        boolean entityPressure = lastCandidates > config.adaptiveEntityCandidateBudget;
-        boolean framePressure = frameNanos >= 45_000_000L;
-        boolean overloaded = entityPressure || framePressure;
+        long entityCpuNanos = EntityRenderMetrics.lastFrameEntityCpuNanos();
+        boolean candidatePressure = lastCandidates > config.adaptiveEntityCandidateBudget;
+        boolean entityCpuPressure = entityCpuNanos >= ENTITY_OVERLOAD_NANOS;
+        boolean overloaded = candidatePressure || entityCpuPressure;
 
         if (overloaded) {
             overloadedFrames++;
@@ -46,7 +51,7 @@ public final class AdaptiveEntityVisibility {
                 distanceScale = Math.max(0.50, distanceScale - 0.10);
                 overloadedFrames = 0;
             }
-        } else if (frameNanos <= 32_000_000L && !entityPressure) {
+        } else if (entityCpuNanos <= ENTITY_RECOVERY_NANOS && !candidatePressure) {
             recoveryFrames++;
             overloadedFrames = 0;
             if (recoveryFrames >= 12) {

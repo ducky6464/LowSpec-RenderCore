@@ -20,10 +20,9 @@ public abstract class GameRendererMetricsMixin {
     @Inject(method = "render(Lnet/minecraft/client/render/RenderTickCounter;Z)V", at = @At("HEAD"))
     private void lowspec$beginRenderTiming(RenderTickCounter tickCounter, boolean tick, CallbackInfo ci) {
         AetherEngine.beginFrame();
-        boolean needsTiming = LowSpecRenderCoreClient.CONFIG != null
-                && (LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled
-                || LowSpecRenderCoreClient.CONFIG.adaptiveEntityVisibilityEnabled);
-        lowspec$renderStartNanos = needsTiming ? System.nanoTime() : 0L;
+        boolean diagnosticsEnabled = LowSpecRenderCoreClient.CONFIG != null
+                && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled;
+        lowspec$renderStartNanos = diagnosticsEnabled ? System.nanoTime() : 0L;
         AdaptiveEntityVisibility.beginFrame();
     }
 
@@ -38,8 +37,8 @@ public abstract class GameRendererMetricsMixin {
                     && LowSpecRenderCoreClient.CONFIG.diagnosticsEnabled) {
                 RenderFrameMetrics.record(elapsed);
             }
-            AdaptiveEntityVisibility.finishFrame(elapsed);
             lowspec$renderStartNanos = 0L;
         }
+        AdaptiveEntityVisibility.finishFrame();
     }
 }
