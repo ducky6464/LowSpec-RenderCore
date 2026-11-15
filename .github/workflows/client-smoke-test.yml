@@ -29,10 +29,14 @@ jobs:
           export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dlowspec.rendercore.testConfigScreen=true"
           xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
             set -euo pipefail
-            gradle runClient --no-daemon > client-smoke.log 2>&1 &
+            # Keep Gradle and its Minecraft child in one process group so the
+            # test can shut down the whole client cleanly after the capture.
+            setsid gradle runClient --no-daemon > client-smoke.log 2>&1 &
             gradle_pid=$!
             cleanup() {
-              kill "$gradle_pid" 2>/dev/null || true
+              kill -TERM -- "-$gradle_pid" 2>/dev/null || true
+              sleep 2
+              kill -KILL -- "-$gradle_pid" 2>/dev/null || true
               wait "$gradle_pid" 2>/dev/null || true
             }
             trap cleanup EXIT
@@ -56,24 +60,34 @@ jobs:
               exit 1
             fi
 
-            # Some GLFW/Mesa combinations do not expose a window title that
-            # xdotool can match reliably under bare Xvfb. The game has already
-            # logged the settings-screen-ready marker, so capture the X root
-            # window directly instead of depending on a fragile title lookup.
-            sleep 3
-            import -window root run/screenshots/settings-screen.png
-            screenshot="run/screenshots/settings-screen.png"
-            if [ ! -s "$screenshot" ]; then
+            # CLIENT_STARTED can fire before the first completed render. Keep
+            # sampling the virtual display until OCR confirms that the actual
+            # settings screen has appeared, instead of accepting a black frame.
+            visible=0
+            for i in $(seq 1 60); do
+              import -window root run/screenshots/settings-screen.png
+              tesseract run/screenshots/settings-screen.png stdout 2>/dev/null > settings-screen-ocr.txt || true
+              if grep -Eiq "Entity distance culling" settings-screen-ocr.txt \
+                && grep -Eiq "Players distance" settings-screen-ocr.txt \
+                && grep -Eiq "Hostile mob distance" settings-screen-ocr.txt \
+                && grep -Eiq "Diagnostics" settings-screen-ocr.txt; then
+                visible=1
+                break
+              fi
+              if ! kill -0 "$gradle_pid" 2>/dev/null; then
+                cat client-smoke.log
+                echo "Minecraft exited before the settings screen was rendered."
+                exit 1
+              fi
+              sleep 1
+            done
+            if [ "$visible" -ne 1 ]; then
+              cat settings-screen-ocr.txt || true
+              xwininfo -root -tree || true
               cat client-smoke.log
-              echo "Xvfb did not produce a settings-screen capture."
+              echo "The settings screen never became visible in the Xvfb capture."
               exit 1
             fi
-
-            tesseract "$screenshot" stdout 2>/dev/null | tee settings-screen-ocr.txt
-            grep -Eiq "Entity distance culling" settings-screen-ocr.txt
-            grep -Eiq "Players distance" settings-screen-ocr.txt
-            grep -Eiq "Hostile mob distance" settings-screen-ocr.txt
-            grep -Eiq "Diagnostics" settings-screen-ocr.txt
             echo "Settings screen visual text test passed."
           '
       - name: Upload settings screen evidence
