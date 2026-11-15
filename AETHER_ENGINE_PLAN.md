@@ -33,8 +33,9 @@ Aether is not a replacement GPU driver or a new hardware-level API like Vulkan. 
 Proposed modules:
 
 1. **Aether API**
-   - Backend-neutral interfaces for render capabilities, entity batches, reusable geometry, per-instance data, and resource lifetime.
+   - Backend-neutral interfaces for render capabilities, entity batches, reusable geometry, per-instance data, and resource lifetime. The first API skeleton and vanilla fallback now exist under `dev.lowspec.rendercore.aether`.
    - Explicit render-thread ownership for GPU resources.
+   - Use Minecraft 1.21.11's Blaze3D / RenderPipeline / GpuBuffer / RenderPass path for custom drawing. Keep raw OpenGL calls limited to capability inspection; do not build a parallel legacy GL submission path.
    - No direct GL calls from worker threads.
 
 2. **Capability Detection**
@@ -45,7 +46,9 @@ Proposed modules:
    - Never assume SSBO support on the Chromebook's Linux graphics stack.
 
 3. **Entity Extraction and Profiling**
-   - Measure entity render-state extraction separately from entity render-command submission.
+   - Measure entity render-state extraction separately from entity render-command enqueue time. Enqueue time is not GPU draw time and must never be reported as such.
+   - The first profiler implementation is now wired into `EntityRenderManager#getAndUpdateRenderState` and `EntityRenderManager#render`; it records player and total counts plus rolling per-frame CPU timings when general diagnostics are enabled.
+   - Next profiling step: measure the later command execution / actual GPU pass separately where Minecraft exposes a safe hook, and validate whether extraction or draw submission is the real lobby bottleneck.
    - Record player and non-player counts, average and p95 CPU time, and fallback counts.
    - Use fixed-size/low-allocation metrics.
    - Establish baseline before changing rendering behavior.
@@ -84,7 +87,7 @@ Proposed modules:
 ## Implementation sequence
 
 ### Phase 0: Establish truth
-- Add entity extraction/render-command timing and entity counts.
+- Add entity extraction/render-command timing and entity counts. (Initial implementation added; CI and runtime validation still required.)
 - Capture baseline in an empty area, normal world, 5-10 player scene, and crowded lobby.
 - Record average FPS, 1% lows, frame-time p95, CPU render time, and GPU/driver capability where measurable.
 - Keep the existing renderer unchanged.
@@ -132,3 +135,14 @@ Proposed modules:
 - Yarn 1.21.11 EntityRenderManager: https://maven.fabricmc.net/docs/yarn-1.21.11+build.6/net/minecraft/client/render/entity/EntityRenderManager.html
 - Fabric rendering concepts: https://docs.fabricmc.net/develop/rendering/basic-concepts
 - Fabric world extraction/drawing phases: https://docs.fabricmc.net/develop/rendering/world
+
+
+## Current implementation status (2026-11-14)
+
+- Added `AetherCapabilities`, `AetherBackend`, `VanillaBackend`, `AetherRenderThread`, and `AetherEngine` as the first API/lifecycle foundation.
+- Connected Aether frame lifecycle to `GameRenderer`.
+- Expanded AEV to apply adaptive distance scaling to remote players as well as non-player entities, while preserving the local player and camera target and enforcing a closer minimum distance for remote players.
+- Added an AEV toggle to the entity settings page.
+- Added optional diagnostics for entity render-state extraction and render-command enqueue time, including player counts and a rolling 120-frame average. These metrics are CPU-side only; they do not measure actual GPU execution.
+- Latest source revision is still awaiting its GitHub Actions build and client startup/settings test. Do not mark these additions validated until both checks complete.
+- Next: validate profiler mixins, add accurate render-command execution/GPU timing where safe, then design the first narrowly scoped player batch using Minecraft 1.21.11's current render pipeline and a strict vanilla fallback.
