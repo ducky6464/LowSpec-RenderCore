@@ -52,6 +52,8 @@ public final class RenderCoreConfigScreen extends Screen {
 
     private void buildEntityPage(int y) {
         RenderCoreConfig c = LowSpecRenderCoreClient.CONFIG;
+        toggle("Adaptive entity visibility", y, () -> c.adaptiveEntityVisibilityEnabled,
+                v -> c.adaptiveEntityVisibilityEnabled = v); y += 27;
         toggle("Entity distance culling", y, () -> c.entityDistanceCullingEnabled,
                 v -> c.entityDistanceCullingEnabled = v); y += 27;
         adjust("Players distance", y, () -> c.playerRenderDistance, v -> c.playerRenderDistance = v, 16, 16, 512); y += 27;
