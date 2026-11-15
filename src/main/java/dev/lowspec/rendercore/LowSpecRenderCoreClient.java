@@ -11,6 +11,7 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.text.Text;
 import dev.lowspec.rendercore.mixin.WorldRendererInvoker;
+import dev.lowspec.rendercore.aether.AetherEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,10 +175,18 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                             context.getSource().sendFeedback(Text.literal(
                                     "Aether adaptive visibility: "
                                             + (CONFIG.adaptiveEntityVisibilityEnabled ? "ON" : "OFF")
-                                            + " | Entity candidates/frame: " + AdaptiveEntityVisibility.getLastCandidateCount()
-                                            + " | Adaptive entity distance scale: "
+                                            + " | Candidates/frame: " + AdaptiveEntityVisibility.getLastCandidateCount()
+                                            + " | Player candidates: " + AdaptiveEntityVisibility.getLastPlayerCandidateCount()
+                                            + " | Distance scale: "
                                             + String.format(java.util.Locale.ROOT, "%.0f%%",
                                                     AdaptiveEntityVisibility.getDistanceScale() * 100.0)));
+                            var aetherPool = AetherEngine.instanceBufferPool();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether GPU upload ring: " + aetherPool.successfulUploads() + " uploads"
+                                            + " | " + aetherPool.skippedBusyUploads() + " skipped-busy"
+                                            + " | " + aetherPool.failedUploads() + " failed"
+                                            + " | " + aetherPool.uploadedBytes() + " bytes uploaded"
+                                            + " | Staged instances: " + AetherEngine.instanceBatch().instanceCount()));
                             return 1;
                         }))
                         .then(ClientCommandManager.literal("culling")
