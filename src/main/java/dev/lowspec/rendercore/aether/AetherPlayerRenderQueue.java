@@ -92,6 +92,7 @@ public final class AetherPlayerRenderQueue {
 
     public void beginFrame() {
         Arrays.fill(skins, 0, size, null);
+        Arrays.fill(groupSizes, 0, groupCount, 0);
         size = 0;
         groupCount = 0;
     }
@@ -157,7 +158,6 @@ public final class AetherPlayerRenderQueue {
      * The bounded O(n^2) search avoids hash-map allocation on the render thread.
      */
     public void buildSkinGroups() {
-        Arrays.fill(groupSizes, 0, groupCount, 0);
         groupCount = 0;
 
         for (int player = 0; player < size; player++) {
