@@ -21,7 +21,7 @@ public final class AetherPlayerVertexLayout {
         int position = FORMAT.getOffset(VertexFormatElement.POSITION);
         int uv = FORMAT.getOffset(VertexFormatElement.UV0);
         int normal = FORMAT.getOffset(VertexFormatElement.NORMAL);
-        if (stride != STRIDE_BYTES || position != 0 || uv != 12 || normal != 16) {
+        if (stride != STRIDE_BYTES || position != 0 || uv != 12 || normal != 20) {
             throw new IllegalStateException("Aether player vertex format mismatch: stride=" + stride
                     + ", position=" + position + ", uv=" + uv + ", normal=" + normal);
         }
