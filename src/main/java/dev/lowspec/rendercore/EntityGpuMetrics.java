@@ -6,9 +6,11 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 
 /**
- * Samples GPU execution time for RenderDispatcher with Minecraft's own timer
- * query abstraction. Results are polled asynchronously; this class never
- * waits for the GPU and yields whenever another owner is using GlTimer.
+ * Samples GPU timer-query duration around RenderDispatcher.render() with
+ * Minecraft's own timer abstraction. This is only the GPU work executed inside
+ * that call's query scope; Minecraft may defer other work to later render
+ * passes, so this must not be treated as total per-entity GPU cost. Results
+ * are polled asynchronously; this class never waits for the GPU.
  *
  * All methods are called on the render thread.
  */

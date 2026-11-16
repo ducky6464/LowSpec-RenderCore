@@ -49,8 +49,8 @@ Proposed modules:
    - Measure entity render-state extraction separately from entity render-command enqueue time. Enqueue time is not GPU draw time and must never be reported as such.
    - The profiler is wired into `EntityRenderManager#getAndUpdateRenderState` and `EntityRenderManager#render`; it records player and total counts plus rolling per-frame CPU timings when general diagnostics are enabled.
    - Counters are thread-safe and per-invocation start timestamps are thread-local. These metrics remain CPU-side and do not measure actual GPU execution.
-   - Added a RenderDispatcher CPU dispatch timer and a non-blocking GPU timer-query sampler. GPU queries are only started when Minecraft's shared GlTimer is idle; results are polled later and never synchronously waited on. If another system owns the timer or results are pending, Aether skips sampling.
-   - Record player and non-player counts, average and p95 CPU time, and fallback counts.
+   - Added a RenderDispatcher CPU dispatch timer and a non-blocking GPU timer-query sampler. GPU queries are only started when Minecraft's shared GlTimer is idle; results are polled later and never synchronously waited on. If another system owns the timer or results are pending, Aether skips sampling. The GPU query measures only the RenderDispatcher call scope, not guaranteed total entity GPU cost because later render passes may execute deferred work.
+   - Record player and total entity extraction/enqueue counts, average and p95 CPU time, dispatch CPU time, and GPU-query sample availability. A custom-render fallback counter is deferred until a custom renderer actually exists.
    - Use fixed-size/low-allocation metrics.
 
 4. **Adaptive Entity Visibility (AEV)**
@@ -142,13 +142,14 @@ Proposed modules:
 
 - Aether API/lifecycle foundation and vanilla fallback exist.
 - AEV currently scales configured visibility distances under rough entity/frame pressure; it is not a full priority-based budget.
-- Optional entity extraction, enqueue, RenderDispatcher CPU dispatch, and asynchronous GPU execution profiling exists. GPU samples are collected only when Minecraft's shared GlTimer is idle and are read only after the query reports availability.
+- Entity extraction/enqueue profiling, RenderDispatcher CPU dispatch timing, and asynchronous GPU timer queries are implemented. The GPU query is explicitly scoped to the RenderDispatcher call and is not a complete measurement of all deferred entity draw work.
 - Capability detection now queries the active context's actual OpenGL major/minor version.
-- Commit `8f63031a29d536f75820f777f8d6c04ff02bdc06` contains the profiler/capability corrections. Its build and client startup/settings-screen smoke test are still running.
-- The previous revision's Gradle build passed. Do not treat that as validation of the newer commit.
+- Commit `1de3e751e63494e4c9fa9c9700b2da003c313c89` passed the Gradle build and headless Minecraft startup/settings-screen smoke test.
 - The settings-screen smoke test was failing because xdotool could not match the GLFW window title even though Minecraft logged the screen-ready marker. The workflow now captures the Xvfb root window directly and validates the rendered text.
 - A bounded player render-state queue and LivingEntityRenderer capture mixin have been added on branch `aether-engine-prototype`.
 - The queue now retains the player skin, player ID, base transforms/animation inputs, lighting/outline, visibility state, skin overlay visibility, cape visibility, and gliding pose values. It does not retain the live player object.
 - GitHub Actions for the player-state capture revision passed: Gradle build and client startup/settings-screen smoke test. This validates compilation and initialization, not in-world GPU rendering.
 - The current queue is only an extraction/snapshot stage. It does not generate player mesh vertices, group by skin/material, submit a custom RenderPipeline, or issue a custom GPU draw. Vanilla remains the only active renderer.
+- The `/rendercore aether upload-test` command now schedules a single 72-byte identity-record upload on the render thread. This tests staging-to-GPU-buffer mapping and ring/fence bookkeeping without drawing anything.
+- `/rendercore stats` reports upload self-test results, ring errors, retained memory, staging capacity/overflow, and profiler sample counters.
 - Next: implement and test a minimal base-player geometry extraction and custom draw pass using the 1.21.11 RenderPipeline/RenderPass APIs, while leaving unsupported layers on vanilla. Do not claim performance gains until measured on the target Chromebook.

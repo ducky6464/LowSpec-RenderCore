@@ -18,6 +18,11 @@ public final class AetherEngine {
     private static final AetherPlayerRenderQueue PLAYER_RENDER_QUEUE = new AetherPlayerRenderQueue();
     private static final AetherInstanceBufferPool INSTANCE_BUFFER_POOL = new AetherInstanceBufferPool();
     private static volatile GpuBuffer lastUploadedInstanceBuffer;
+    private static volatile boolean uploadSelfTestRequested;
+    private static long uploadSelfTestRuns;
+    private static long uploadSelfTestPassed;
+    private static long uploadSelfTestFailed;
+    private static volatile String uploadSelfTestStatus = "not run";
 
     private AetherEngine() { }
 
@@ -35,6 +40,27 @@ public final class AetherEngine {
     public static void endFrame() {
         if (INSTANCE_BATCH.instanceCount() > 0) {
             lastUploadedInstanceBuffer = INSTANCE_BUFFER_POOL.upload(INSTANCE_BATCH);
+        }
+        if (uploadSelfTestRequested) {
+            uploadSelfTestRequested = false;
+            uploadSelfTestRuns++;
+            AetherInstanceBatch testBatch = new AetherInstanceBatch(1);
+            float[] identity = new float[16];
+            identity[0] = identity[5] = identity[10] = identity[15] = 1.0f;
+            if (testBatch.tryAppend(identity, 0xFFFFFFFF, 0)) {
+                GpuBuffer uploaded = INSTANCE_BUFFER_POOL.upload(testBatch);
+                if (uploaded != null) {
+                    uploadSelfTestPassed++;
+                    uploadSelfTestStatus = "passed: 72-byte GPU upload completed (no draw issued)";
+                    lastUploadedInstanceBuffer = uploaded;
+                } else {
+                    uploadSelfTestFailed++;
+                    uploadSelfTestStatus = "failed: upload returned no buffer; inspect ring errors/skips";
+                }
+            } else {
+                uploadSelfTestFailed++;
+                uploadSelfTestStatus = "failed: could not stage the test instance";
+            }
         }
         AetherBackend active = backend;
         if (active != null) active.endFrame();
@@ -73,5 +99,15 @@ public final class AetherEngine {
     public static AetherPlayerRenderQueue playerRenderQueue() { return PLAYER_RENDER_QUEUE; }
     public static AetherInstanceBufferPool instanceBufferPool() { return INSTANCE_BUFFER_POOL; }
     public static GpuBuffer lastUploadedInstanceBuffer() { return lastUploadedInstanceBuffer; }
+    /** Queues a one-record upload smoke test for the next render-thread frame end. */
+    public static boolean requestUploadSelfTest() {
+        if (uploadSelfTestRequested) return false;
+        uploadSelfTestRequested = true;
+        return true;
+    }
+    public static String uploadSelfTestStatus() { return uploadSelfTestStatus; }
+    public static long uploadSelfTestRuns() { return uploadSelfTestRuns; }
+    public static long uploadSelfTestPassed() { return uploadSelfTestPassed; }
+    public static long uploadSelfTestFailed() { return uploadSelfTestFailed; }
     public static String initializationError() { return initializationError; }
 }

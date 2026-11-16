@@ -125,7 +125,8 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Pending: " + gpu.pendingQueries() + "/" + gpu.pendingHighWater()
                                             + " | Busy/full skips: " + gpu.busySkips() + "/" + gpu.queueFullSkips()
                                             + " | Discarded: " + gpu.discardedQueries()
-                                            + " | Query available: " + gpu.querySupported()));
+                                            + " | Query available: " + gpu.querySupported()
+                                            + " | Scope: RenderDispatcher call only; not total entity GPU cost"));
                             context.getSource().sendFeedback(Text.literal(
                                     "RenderDispatcher CPU dispatch: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg/frame (%.3f ms last)",
@@ -198,9 +199,24 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Draw fences: " + aetherPool.drawFenceUpdates()
                                             + " | " + aetherPool.retainedBytes() + " bytes retained"
                                             + " | " + aetherPool.uploadedBytes() + " bytes uploaded"
-                                            + " | Staged instances: " + AetherEngine.instanceBatch().instanceCount()));
+                                            + " | Staged instances: " + AetherEngine.instanceBatch().instanceCount()
+                                            + "/" + AetherEngine.instanceBatch().capacity()
+                                            + " | Staging overflows: " + AetherEngine.instanceBatch().overflowCount()
+                                            + " | Fence errors: " + aetherPool.fenceErrors()));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether upload self-test: " + AetherEngine.uploadSelfTestStatus()
+                                            + " | " + AetherEngine.uploadSelfTestPassed() + " passed / "
+                                            + AetherEngine.uploadSelfTestFailed() + " failed"));
                             return 1;
                         }))
+                        .then(ClientCommandManager.literal("aether")
+                                .then(ClientCommandManager.literal("upload-test").executes(context -> {
+                                    boolean queued = AetherEngine.requestUploadSelfTest();
+                                    context.getSource().sendFeedback(Text.literal(queued
+                                            ? "Aether GPU upload test queued. Run /rendercore stats after the next frame."
+                                            : "An Aether upload test is already queued."));
+                                    return 1;
+                                })))
                         .then(ClientCommandManager.literal("culling")
                                 .then(ClientCommandManager.literal("on").executes(context -> setCulling(context.getSource(), true)))
                                 .then(ClientCommandManager.literal("off").executes(context -> setCulling(context.getSource(), false))))
