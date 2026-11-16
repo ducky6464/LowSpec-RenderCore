@@ -209,6 +209,9 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | " + geometryPool.uploadedBytes() + " bytes uploaded"
                                             + " | In-flight: " + geometryPool.inFlightSlots()
                                             + "/" + geometryPool.slotCount()
+                                            + " | Draw fences: " + geometryPool.drawFenceUpdates()
+                                            + " | Fence errors: " + geometryPool.fenceErrors()
+                                            + " | Retained: " + geometryPool.retainedBytes() + " bytes"
                                             + " | Quarantined: " + geometryPool.quarantinedSlots()));
                             var aetherPool = AetherEngine.instanceBufferPool();
                             context.getSource().sendFeedback(Text.literal(
