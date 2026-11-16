@@ -6,7 +6,6 @@ import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 
-import java.nio.ByteOrder;
 
 /**
  * Bounded non-blocking ring for uploading captured player base-model vertices.
@@ -14,7 +13,6 @@ import java.nio.ByteOrder;
  */
 public final class AetherPlayerGeometryBufferPool implements AutoCloseable {
     private static final int SLOT_COUNT = 3;
-    private static final int FLOATS_PER_VERTEX = AetherModelGeometryBuffer.FLOATS_PER_VERTEX;
     private final int capacityBytes;
     private final Slot[] slots = new Slot[SLOT_COUNT];
     private int nextSlot;
@@ -23,14 +21,23 @@ public final class AetherPlayerGeometryBufferPool implements AutoCloseable {
 
     public AetherPlayerGeometryBufferPool(int capacityFloats) {
         if (capacityFloats < 1) throw new IllegalArgumentException("capacity must be positive");
-        capacityBytes = Math.multiplyExact(capacityFloats, Float.BYTES);
+        if (capacityFloats % AetherPlayerVertexWriter.SOURCE_FLOATS_PER_VERTEX != 0) {
+            throw new IllegalArgumentException("capacity must contain whole vertices");
+        }
+        capacityBytes = Math.multiplyExact(capacityFloats / AetherPlayerVertexWriter.SOURCE_FLOATS_PER_VERTEX,
+                AetherPlayerVertexWriter.GPU_BYTES_PER_VERTEX);
         for (int i = 0; i < slots.length; i++) slots[i] = new Slot(i);
     }
 
     public GpuBuffer upload(AetherPlayerGeometryArena arena) {
         AetherRenderThread.assertCurrent();
         if (closed || arena == null || arena.usedFloats() == 0) return null;
-        int bytes = Math.multiplyExact(arena.usedFloats(), Float.BYTES);
+        if (arena.usedFloats() % AetherPlayerVertexWriter.SOURCE_FLOATS_PER_VERTEX != 0) {
+            failedUploads++;
+            return null;
+        }
+        int bytes = Math.multiplyExact(arena.usedFloats() / AetherPlayerVertexWriter.SOURCE_FLOATS_PER_VERTEX,
+                AetherPlayerVertexWriter.GPU_BYTES_PER_VERTEX);
         if (bytes > capacityBytes) {
             failedUploads++;
             return null;
@@ -49,8 +56,9 @@ public final class AetherPlayerGeometryBufferPool implements AutoCloseable {
             }
             encoder = RenderSystem.getDevice().createCommandEncoder();
             try (GpuBuffer.MappedView mapped = encoder.mapBuffer(slot.buffer.slice(0L, bytes), false, true)) {
-                mapped.data().order(ByteOrder.nativeOrder()).asFloatBuffer()
-                        .put(arena.data(), 0, arena.usedFloats());
+                if (!AetherPlayerVertexWriter.write(arena.data(), arena.usedFloats(), mapped.data())) {
+                    throw new IllegalStateException("Could not pack captured player vertices into GPU layout");
+                }
             }
             slot.fence = encoder.createFence();
             slot.bytes = bytes;
