@@ -47,6 +47,7 @@ public final class AetherPlayerRenderQueue {
     private final float[] flyingRotation, glidingTicks;
     // Stable, allocation-free grouping plan for snapshots sharing identical skin metadata.
     private final int[] groupOfPlayer;
+    private final int[] groupRepresentatives;
     private final int[] groupStarts;
     private final int[] groupSizes;
     private final int[] groupWriteCursors;
@@ -82,6 +83,7 @@ public final class AetherPlayerRenderQueue {
         flyingRotation = new float[capacity];
         glidingTicks = new float[capacity];
         groupOfPlayer = new int[capacity];
+        groupRepresentatives = new int[capacity];
         groupStarts = new int[capacity];
         groupSizes = new int[capacity];
         groupWriteCursors = new int[capacity];
@@ -161,11 +163,11 @@ public final class AetherPlayerRenderQueue {
         for (int player = 0; player < size; player++) {
             SkinTextures skin = skins[player];
             int group = 0;
-            while (group < groupCount && !skins[groupOfPlayer[group]].equals(skin)) {
+            while (group < groupCount && !skins[groupRepresentatives[group]].equals(skin)) {
                 group++;
             }
             if (group == groupCount) {
-                groupOfPlayer[groupCount] = player;
+                groupRepresentatives[groupCount] = player;
                 groupCount++;
             }
             groupOfPlayer[player] = group;
@@ -189,7 +191,7 @@ public final class AetherPlayerRenderQueue {
     public int skinGroupSize(int group) { checkGroupIndex(group); return groupSizes[group]; }
     public SkinTextures skinGroupTexture(int group) {
         checkGroupIndex(group);
-        return skins[groupOfPlayer[groupStarts[group]]];
+        return skins[groupRepresentatives[group]];
     }
     public int skinGroupPlayerIndex(int group, int offset) {
         checkGroupIndex(group);
