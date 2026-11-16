@@ -225,3 +225,10 @@ Proposed modules:
 - The GPU geometry ring now uploads 24 bytes per vertex instead of the original 32-byte float layout, reducing vertex transfer size by 25% while retaining native float UV precision and normalized-byte normals.
 - The declared VertexFormat verifies its stride and attribute offsets against the writer's byte layout. Tests cover exact encoded values, clamping, multiple vertices, invalid/non-finite input, insufficient output capacity, and format offsets.
 - This defines the vertex contract needed by the future custom shader/pipeline. Shader compilation, texture binding, RenderPass submission, and actual draw calls remain unfinished.
+
+### Player shader, texture binding, and draw submission foundation
+- Added the Aether base-player vertex and fragment shader resources and a dedicated RenderPipeline definition using the compact native-compatible player vertex format.
+- Registered the pipeline in Minecraft's pipeline registry through a narrowly scoped Mixin invoker during client initialization. Registration failure is caught and leaves vanilla rendering active.
+- Added AetherPlayerTextureBinder to resolve the captured skin's body texture through Minecraft's texture manager and bind its GPU view/sampler to Sampler0.
+- Added AetherPlayerDrawSubmitter to submit validated per-player vertex ranges for a selected skin group into a caller-owned RenderPass, using the registered pipeline and caller-provided dynamic transforms.
+- These are concrete shader, texture-binding, and draw-submission components. They are not yet connected to a live world-render pass, and they do not suppress vanilla player drawing. World-stage integration, safe per-player handoff, and in-world visual validation remain outstanding.
