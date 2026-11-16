@@ -200,3 +200,11 @@ Proposed modules:
 - This closes the live CPU model-capture gap. It does not yet submit a custom GPU draw. A GPU vertex upload path, shader/pipeline compatibility, draw ordering, and safe vanilla/custom handoff remain required before visual testing of a custom renderer.
 
 - The live geometry hook is restricted to Minecraft's PlayerEntityModel class. Unknown or modded player model implementations are not captured and remain entirely on vanilla rendering.
+
+
+### GPU-resident player geometry upload
+- Added AetherPlayerGeometryBufferPool, a three-slot fenced GPU vertex-buffer ring sized to the bounded CPU geometry arena.
+- At frame end, captured player geometry is uploaded as contiguous 8-float vertices (position, UV, normal) using the device command encoder's mapped buffer path.
+- Slot reuse is non-blocking: the pool polls fences with a zero timeout, skips when all slots are busy, and quarantines slots when mapping/fence state is uncertain.
+- The engine exposes the latest uploaded geometry buffer for the upcoming render-pass integration, closes the pool during render-thread shutdown, and reports upload/fence counters in /rendercore stats.
+- This moves captured base-player mesh data from CPU memory into GPU vertex buffers. It still does not bind a RenderPipeline, create a RenderPass, issue draw calls, or alter vanilla rendering. The uploaded geometry is currently a preparatory GPU resource, not a visible custom renderer.
