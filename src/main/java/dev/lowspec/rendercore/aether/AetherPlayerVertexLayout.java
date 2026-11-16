@@ -17,11 +17,13 @@ public final class AetherPlayerVertexLayout {
             .build();
 
     static {
-        if (FORMAT.getVertexSize() != STRIDE_BYTES
-                || FORMAT.getOffset(VertexFormatElement.POSITION) != 0
-                || FORMAT.getOffset(VertexFormatElement.UV0) != 12
-                || FORMAT.getOffset(VertexFormatElement.NORMAL) != 16) {
-            throw new IllegalStateException("Aether player vertex format does not match packed upload layout");
+        int stride = FORMAT.getVertexSize();
+        int position = FORMAT.getOffset(VertexFormatElement.POSITION);
+        int uv = FORMAT.getOffset(VertexFormatElement.UV0);
+        int normal = FORMAT.getOffset(VertexFormatElement.NORMAL);
+        if (stride != STRIDE_BYTES || position != 0 || uv != 12 || normal != 16) {
+            throw new IllegalStateException("Aether player vertex format mismatch: stride=" + stride
+                    + ", position=" + position + ", uv=" + uv + ", normal=" + normal);
         }
     }
 
