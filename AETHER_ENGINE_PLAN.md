@@ -104,7 +104,7 @@ Proposed modules:
 - In progress: a bounded per-frame player render-state snapshot queue now captures player identity, skin, transforms, animation inputs, lighting, visibility flags, skin-layer visibility, cape visibility, and flight pose values.
 - A mixin captures only PlayerEntityRenderState instances at the LivingEntityRenderer extraction entry point.
 - The snapshot queue is render-thread confined and does not retain live player entities.
-- A bounded, allocation-free CPU grouping plan now groups captured player snapshots by `SkinTextures` equality and exposes group indices/counts. This is preparation metadata only; it does not create meshes or submit GPU draws.
+- Player snapshots now use a reusable fixed-capacity generic grouping index to group equal `SkinTextures` metadata. It preserves stable player order within each group, handles empty/null keys, validates bounds, and reuses preallocated arrays without per-frame collection allocation. Unit tests cover grouping, ordering, clearing/rebuilding, null keys, and invalid bounds. This remains preparation metadata only; it does not create meshes or submit GPU draws.
 - The custom player geometry builder, texture-compatible GPU batch submission, RenderPipeline submission, and GPU draw pass are still not implemented.
 - Retain vanilla fallback for every unsupported visual.
 - Validate on 1.21.11 and the Chromebook's actual OpenGL stack before expanding.
@@ -150,7 +150,7 @@ Proposed modules:
 - A bounded player render-state queue and LivingEntityRenderer capture mixin have been added on branch `aether-engine-prototype`.
 - The queue now retains the player skin, player ID, base transforms/animation inputs, lighting/outline, visibility state, skin overlay visibility, cape visibility, and gliding pose values. It does not retain the live player object.
 - GitHub Actions for the player-state capture revision passed: Gradle build and client startup/settings-screen smoke test. This validates compilation and initialization, not in-world GPU rendering.
-- The queue captures player snapshots and now builds stable CPU-side skin groups without per-frame collection allocation. It does not generate player mesh vertices, submit a custom RenderPipeline, or issue a custom GPU draw. Vanilla remains the only active renderer.
+- The queue captures player snapshots and builds stable CPU-side skin groups using the tested `AetherGroupIndex`. It does not generate player mesh vertices, submit a custom RenderPipeline, or issue a custom GPU draw. Vanilla remains the only active renderer.
 - The `/rendercore aether upload-test` command now schedules a single 72-byte identity-record upload on the render thread. This tests staging-to-GPU-buffer mapping and ring/fence bookkeeping without drawing anything.
 - `/rendercore stats` reports upload self-test results, ring errors, retained memory, staging capacity/overflow, and profiler sample counters.
 - `EntityRenderMetricsTest` verifies extraction, enqueue, dispatch, p95 aggregation, and that disabled profiling returns no start timestamp.
