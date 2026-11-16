@@ -34,9 +34,18 @@ public abstract class PlayerEntityRendererMixin {
         }
     }
 
+    /**
+     * Capture at the base-model queue submission point, while the renderer's
+     * entity translation/rotation/scale are still on the supplied matrix stack.
+     * Feature-layer submissions happen in their own renderers and stay vanilla.
+     */
     @Inject(
             method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/render/state/CameraRenderState;)V",
-            at = @At("TAIL")
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/render/command/RenderCommandQueue;submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/RenderLayer;IIILnet/minecraft/client/texture/Sprite;ILnet/minecraft/client/render/command/ModelCommandRenderer$CrumblingOverlayCommand;)V",
+                    shift = At.Shift.BEFORE
+            )
     )
     private void aether$capturePosedBaseModel(LivingEntityRenderState state,
                                                MatrixStack matrices,
@@ -49,6 +58,6 @@ public abstract class PlayerEntityRendererMixin {
         int index = snapshots.size() - 1;
         if (index < 0 || snapshots.playerId(index) != playerState.id) return;
         if (!AetherPlayerRenderEligibility.canUseCustomBaseModel(snapshots.flags(index))) return;
-        AetherEngine.capturePlayerGeometry(index, playerModel.getRootPart());
+        AetherEngine.capturePlayerGeometry(index, playerModel.getRootPart(), matrices);
     }
 }

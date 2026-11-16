@@ -21,11 +21,11 @@ public final class AetherEngine {
     private static final AetherPlayerGeometryDrawPlan PLAYER_GEOMETRY_DRAW_PLAN = new AetherPlayerGeometryDrawPlan(PLAYER_RENDER_QUEUE.capacity());
     private static final AetherPlayerGeometryArena PLAYER_GEOMETRY_ARENA =
             new AetherPlayerGeometryArena(128, 128, 128 * 128 * 48);
-    private static final MatrixStack PLAYER_GEOMETRY_MATRICES = new MatrixStack();
     private static final AetherInstanceBufferPool INSTANCE_BUFFER_POOL = new AetherInstanceBufferPool();
     private static final AetherPlayerGeometryBufferPool PLAYER_GEOMETRY_BUFFER_POOL =
             new AetherPlayerGeometryBufferPool(PLAYER_GEOMETRY_ARENA.capacityFloats());
     private static volatile GpuBuffer lastUploadedPlayerGeometryBuffer;
+    private static boolean playerGeometryPrepared;
     private static volatile GpuBuffer lastUploadedInstanceBuffer;
     private static volatile boolean uploadSelfTestRequested;
     private static long uploadSelfTestRuns;
@@ -39,6 +39,7 @@ public final class AetherEngine {
         INSTANCE_BATCH.beginFrame();
         PLAYER_RENDER_QUEUE.beginFrame();
         PLAYER_GEOMETRY_ARENA.beginFrame();
+        playerGeometryPrepared = false;
         // This reference is valid only for the frame whose upload completed.
         // Never expose a previous frame's ring slot after it may be recycled.
         lastUploadedInstanceBuffer = null;
@@ -49,11 +50,7 @@ public final class AetherEngine {
     }
 
     public static void endFrame() {
-        PLAYER_RENDER_QUEUE.buildSkinGroups();
-        PLAYER_GEOMETRY_DRAW_PLAN.build(PLAYER_RENDER_QUEUE.batchPlan(), PLAYER_GEOMETRY_ARENA.offsets(), PLAYER_GEOMETRY_ARENA.floatCounts(), PLAYER_GEOMETRY_ARENA.vertexCounts(), PLAYER_RENDER_QUEUE.size());
-        if (PLAYER_GEOMETRY_ARENA.usedFloats() > 0) {
-            lastUploadedPlayerGeometryBuffer = PLAYER_GEOMETRY_BUFFER_POOL.upload(PLAYER_GEOMETRY_ARENA);
-        }
+        preparePlayerGeometryForDraw();
         if (INSTANCE_BATCH.instanceCount() > 0) {
             lastUploadedInstanceBuffer = INSTANCE_BUFFER_POOL.upload(INSTANCE_BATCH);
         }
@@ -80,6 +77,29 @@ public final class AetherEngine {
         }
         AetherBackend active = backend;
         if (active != null) active.endFrame();
+    }
+
+    /** Builds the per-skin draw plan and uploads this frame's captured geometry once. */
+    public static GpuBuffer preparePlayerGeometryForDraw() {
+        AetherRenderThread.assertCurrent();
+        if (playerGeometryPrepared) return lastUploadedPlayerGeometryBuffer;
+        PLAYER_RENDER_QUEUE.buildSkinGroups();
+        PLAYER_GEOMETRY_DRAW_PLAN.build(
+                PLAYER_RENDER_QUEUE.batchPlan(),
+                PLAYER_GEOMETRY_ARENA.offsets(),
+                PLAYER_GEOMETRY_ARENA.floatCounts(),
+                PLAYER_GEOMETRY_ARENA.vertexCounts(),
+                PLAYER_RENDER_QUEUE.size());
+        if (PLAYER_GEOMETRY_ARENA.usedFloats() > 0) {
+            lastUploadedPlayerGeometryBuffer = PLAYER_GEOMETRY_BUFFER_POOL.upload(PLAYER_GEOMETRY_ARENA);
+        }
+        playerGeometryPrepared = true;
+        return lastUploadedPlayerGeometryBuffer;
+    }
+
+    /** Places a GPU fence after the render pass that consumed this frame's geometry. */
+    public static boolean markPlayerGeometryDrawSubmitted(GpuBuffer buffer) {
+        return PLAYER_GEOMETRY_BUFFER_POOL.markDrawSubmitted(buffer);
     }
 
     public static void initialize() {
@@ -116,10 +136,10 @@ public final class AetherEngine {
     public static AetherPlayerRenderQueue playerRenderQueue() { return PLAYER_RENDER_QUEUE; }
     public static AetherPlayerGeometryArena playerGeometryArena() { return PLAYER_GEOMETRY_ARENA; }
     public static AetherPlayerGeometryDrawPlan playerGeometryDrawPlan() { return PLAYER_GEOMETRY_DRAW_PLAN; }
-    /** Captures the posed base model into the bounded frame arena; vanilla rendering is untouched. */
-    public static boolean capturePlayerGeometry(int playerIndex, ModelPart root) {
-        if (!RenderSystem.isOnRenderThread() || root == null) return false;
-        return PLAYER_GEOMETRY_ARENA.captureOnRenderThread(playerIndex, root, PLAYER_GEOMETRY_MATRICES);
+    /** Captures the posed base model using the renderer's current entity transform. */
+    public static boolean capturePlayerGeometry(int playerIndex, ModelPart root, MatrixStack matrices) {
+        if (!RenderSystem.isOnRenderThread() || root == null || matrices == null) return false;
+        return PLAYER_GEOMETRY_ARENA.captureOnRenderThread(playerIndex, root, matrices);
     }
     public static AetherInstanceBufferPool instanceBufferPool() { return INSTANCE_BUFFER_POOL; }
     public static AetherPlayerGeometryBufferPool playerGeometryBufferPool() { return PLAYER_GEOMETRY_BUFFER_POOL; }
