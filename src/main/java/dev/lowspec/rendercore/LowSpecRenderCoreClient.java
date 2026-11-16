@@ -44,6 +44,7 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         try {
             dev.lowspec.rendercore.aether.AetherPlayerPipeline.register();
             LOGGER.info("Aether player shader pipeline registered; vanilla player drawing remains active.");
+            dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.register();
         } catch (RuntimeException exception) {
             LOGGER.warn("Aether player shader pipeline could not be registered; vanilla rendering remains active.", exception);
         }
@@ -242,9 +243,27 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "Aether upload self-test: " + AetherEngine.uploadSelfTestStatus()
                                             + " | " + AetherEngine.uploadSelfTestPassed() + " passed / "
                                             + AetherEngine.uploadSelfTestFailed() + " failed"));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether player mirror: " + (dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.isMirrorEnabled() ? "ON" : "OFF")
+                                            + " | " + dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.lastStatus()
+                                            + " | Frames: " + dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.successfulFrames()
+                                            + " | Drawn ranges: " + dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.submittedPackets()
+                                            + " | Skipped/failed: " + dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.skippedFrames()
+                                            + "/" + dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.failedFrames()));
                             return 1;
                         }))
                         .then(ClientCommandManager.literal("aether")
+                                .then(ClientCommandManager.literal("mirror")
+                                        .then(ClientCommandManager.literal("on").executes(context -> {
+                                            dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.setMirrorEnabled(true);
+                                            context.getSource().sendFeedback(Text.literal("Aether player mirror pass enabled. Visual test only; vanilla player rendering remains active."));
+                                            return 1;
+                                        }))
+                                        .then(ClientCommandManager.literal("off").executes(context -> {
+                                            dev.lowspec.rendercore.aether.AetherPlayerWorldRenderer.setMirrorEnabled(false);
+                                            context.getSource().sendFeedback(Text.literal("Aether player mirror pass disabled."));
+                                            return 1;
+                                        })))
                                 .then(ClientCommandManager.literal("upload-test").executes(context -> {
                                     boolean queued = AetherEngine.requestUploadSelfTest();
                                     context.getSource().sendFeedback(Text.literal(queued
