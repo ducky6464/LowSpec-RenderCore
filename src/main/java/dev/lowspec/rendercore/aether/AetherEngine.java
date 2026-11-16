@@ -50,7 +50,9 @@ public final class AetherEngine {
     }
 
     public static void endFrame() {
-        preparePlayerGeometryForDraw();
+        // Always keep CPU diagnostics current, but do not upload player meshes unless
+        // the explicit visual mirror test requests a GPU draw this frame.
+        buildPlayerGeometryDrawPlan();
         if (INSTANCE_BATCH.instanceCount() > 0) {
             lastUploadedInstanceBuffer = INSTANCE_BUFFER_POOL.upload(INSTANCE_BATCH);
         }
@@ -79,10 +81,9 @@ public final class AetherEngine {
         if (active != null) active.endFrame();
     }
 
-    /** Builds the per-skin draw plan and uploads this frame's captured geometry once. */
-    public static GpuBuffer preparePlayerGeometryForDraw() {
-        AetherRenderThread.assertCurrent();
-        if (playerGeometryPrepared) return lastUploadedPlayerGeometryBuffer;
+    /** Builds CPU-side skin groups and draw packets once per frame without touching the GPU. */
+    private static void buildPlayerGeometryDrawPlan() {
+        if (playerGeometryPrepared) return;
         PLAYER_RENDER_QUEUE.buildSkinGroups();
         PLAYER_GEOMETRY_DRAW_PLAN.build(
                 PLAYER_RENDER_QUEUE.batchPlan(),
@@ -90,10 +91,20 @@ public final class AetherEngine {
                 PLAYER_GEOMETRY_ARENA.floatCounts(),
                 PLAYER_GEOMETRY_ARENA.vertexCounts(),
                 PLAYER_RENDER_QUEUE.size());
-        if (PLAYER_GEOMETRY_ARENA.usedFloats() > 0) {
+        playerGeometryPrepared = true;
+    }
+
+    /**
+     * Uploads this frame's captured geometry only when a caller explicitly requests
+     * a custom draw (currently the opt-in mirror test). Normal vanilla gameplay
+     * still collects CPU diagnostics but does not pay the GPU upload cost.
+     */
+    public static GpuBuffer preparePlayerGeometryForDraw() {
+        AetherRenderThread.assertCurrent();
+        buildPlayerGeometryDrawPlan();
+        if (lastUploadedPlayerGeometryBuffer == null && PLAYER_GEOMETRY_ARENA.usedFloats() > 0) {
             lastUploadedPlayerGeometryBuffer = PLAYER_GEOMETRY_BUFFER_POOL.upload(PLAYER_GEOMETRY_ARENA);
         }
-        playerGeometryPrepared = true;
         return lastUploadedPlayerGeometryBuffer;
     }
 
