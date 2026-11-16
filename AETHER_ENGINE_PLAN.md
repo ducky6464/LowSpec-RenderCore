@@ -198,3 +198,5 @@ Proposed modules:
 - Added /rendercore stats reporting for captured geometry, arena capacity, and overflow/rejection counters.
 - Corrected two geometry-arena test capacities that were smaller than the two test meshes / even smaller than one mesh. The tests now exercise the intended successful packing and total-capacity overflow cases.
 - This closes the live CPU model-capture gap. It does not yet submit a custom GPU draw. A GPU vertex upload path, shader/pipeline compatibility, draw ordering, and safe vanilla/custom handoff remain required before visual testing of a custom renderer.
+
+- The live geometry hook is restricted to Minecraft's PlayerEntityModel class. Unknown or modded player model implementations are not captured and remain entirely on vanilla rendering.

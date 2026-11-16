@@ -3,6 +3,7 @@ package dev.lowspec.rendercore.mixin;
 import dev.lowspec.rendercore.aether.AetherEngine;
 import dev.lowspec.rendercore.aether.AetherPlayerRenderEligibility;
 import net.minecraft.client.render.entity.model.EntityModel;
+import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.LivingEntityRenderer;
 import net.minecraft.client.render.entity.state.LivingEntityRenderState;
@@ -43,10 +44,11 @@ public abstract class PlayerEntityRendererMixin {
                                                CameraRenderState cameraState,
                                                CallbackInfo ci) {
         if (!(state instanceof PlayerEntityRenderState playerState)) return;
+        if (!(model instanceof PlayerEntityModel playerModel)) return;
         var snapshots = AetherEngine.playerRenderQueue();
         int index = snapshots.size() - 1;
         if (index < 0 || snapshots.playerId(index) != playerState.id) return;
         if (!AetherPlayerRenderEligibility.canUseCustomBaseModel(snapshots.flags(index))) return;
-        AetherEngine.capturePlayerGeometry(index, model.getRootPart());
+        AetherEngine.capturePlayerGeometry(index, playerModel.getRootPart());
     }
 }
