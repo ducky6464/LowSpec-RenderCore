@@ -29,12 +29,22 @@ public final class AetherPlayerRenderQueue {
     public static final int SLEEPING = 1 << 10;
     public static final int OUTLINE = 1 << 11;
     public static final int ON_FIRE = 1 << 12;
+    public static final int HAT_VISIBLE = 1 << 13;
+    public static final int JACKET_VISIBLE = 1 << 14;
+    public static final int LEFT_PANTS_VISIBLE = 1 << 15;
+    public static final int RIGHT_PANTS_VISIBLE = 1 << 16;
+    public static final int LEFT_SLEEVE_VISIBLE = 1 << 17;
+    public static final int RIGHT_SLEEVE_VISIBLE = 1 << 18;
+    public static final int CAPE_VISIBLE = 1 << 19;
+    public static final int EXTRA_EARS = 1 << 20;
+    public static final int APPLY_FLYING_ROTATION = 1 << 21;
 
     private final int capacity;
     private final SkinTextures[] skins;
     private final double[] x, y, z;
     private final float[] bodyYaw, pitch, headYaw, limbProgress, limbAmplitude, age, baseScale, ageScale;
-    private final int[] light, outlineColor, flags;
+    private final int[] light, outlineColor, flags, playerIds;
+    private final float[] flyingRotation, glidingTicks;
     private int size;
     private long overflowCount;
     private long rejectedCount;
@@ -61,6 +71,9 @@ public final class AetherPlayerRenderQueue {
         light = new int[capacity];
         outlineColor = new int[capacity];
         flags = new int[capacity];
+        playerIds = new int[capacity];
+        flyingRotation = new float[capacity];
+        glidingTicks = new float[capacity];
     }
 
     public void beginFrame() {
@@ -94,6 +107,9 @@ public final class AetherPlayerRenderQueue {
         baseScale[i] = state.baseScale;
         ageScale[i] = state.ageScale;
         light[i] = state.light;
+        playerIds[i] = state.id;
+        flyingRotation[i] = state.flyingRotation;
+        glidingTicks[i] = state.glidingTicks;
         outlineColor[i] = state.outlineColor;
         flags[i] = (state.spectator ? SPECTATOR : 0)
                 | (state.invisible ? INVISIBLE : 0)
@@ -107,7 +123,16 @@ public final class AetherPlayerRenderQueue {
                 | (state.isGliding ? GLIDING : 0)
                 | (state.sleepingDirection != null ? SLEEPING : 0)
                 | (state.hasOutline() ? OUTLINE : 0)
-                | (state.onFire ? ON_FIRE : 0);
+                | (state.onFire ? ON_FIRE : 0)
+                | (state.hatVisible ? HAT_VISIBLE : 0)
+                | (state.jacketVisible ? JACKET_VISIBLE : 0)
+                | (state.leftPantsLegVisible ? LEFT_PANTS_VISIBLE : 0)
+                | (state.rightPantsLegVisible ? RIGHT_PANTS_VISIBLE : 0)
+                | (state.leftSleeveVisible ? LEFT_SLEEVE_VISIBLE : 0)
+                | (state.rightSleeveVisible ? RIGHT_SLEEVE_VISIBLE : 0)
+                | (state.capeVisible ? CAPE_VISIBLE : 0)
+                | (state.extraEars ? EXTRA_EARS : 0)
+                | (state.applyFlyingRotation ? APPLY_FLYING_ROTATION : 0);
         return true;
     }
 
@@ -129,6 +154,9 @@ public final class AetherPlayerRenderQueue {
     public float ageScale(int i) { checkIndex(i); return ageScale[i]; }
     public int light(int i) { checkIndex(i); return light[i]; }
     public int outlineColor(int i) { checkIndex(i); return outlineColor[i]; }
+    public int playerId(int i) { checkIndex(i); return playerIds[i]; }
+    public float flyingRotation(int i) { checkIndex(i); return flyingRotation[i]; }
+    public float glidingTicks(int i) { checkIndex(i); return glidingTicks[i]; }
     public int flags(int i) { checkIndex(i); return flags[i]; }
 
     private void checkIndex(int i) {
