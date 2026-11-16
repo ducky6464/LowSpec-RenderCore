@@ -189,7 +189,8 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                             context.getSource().sendFeedback(Text.literal(
                                     "Aether player snapshots: " + playerQueue.size() + "/" + playerQueue.capacity()
                                             + " captured this frame | " + playerQueue.overflowCount() + " capacity overflows"
-                                            + " | " + playerQueue.rejectedCount() + " rejected"));
+                                            + " | " + playerQueue.rejectedCount() + " rejected"
+                                            + " | Skin groups prepared: " + playerQueue.skinGroupCount()));
                             var aetherPool = AetherEngine.instanceBufferPool();
                             context.getSource().sendFeedback(Text.literal(
                                     "Aether GPU upload ring: " + aetherPool.successfulUploads() + " uploads"
