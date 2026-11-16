@@ -18,6 +18,7 @@ public final class AetherEngine {
     private static volatile String initializationError = "";
     private static final AetherInstanceBatch INSTANCE_BATCH = new AetherInstanceBatch();
     private static final AetherPlayerRenderQueue PLAYER_RENDER_QUEUE = new AetherPlayerRenderQueue();
+    private static final AetherPlayerGeometryDrawPlan PLAYER_GEOMETRY_DRAW_PLAN = new AetherPlayerGeometryDrawPlan(PLAYER_RENDER_QUEUE.capacity());
     private static final AetherPlayerGeometryArena PLAYER_GEOMETRY_ARENA =
             new AetherPlayerGeometryArena(128, 128, 128 * 128 * 48);
     private static final MatrixStack PLAYER_GEOMETRY_MATRICES = new MatrixStack();
@@ -49,6 +50,7 @@ public final class AetherEngine {
 
     public static void endFrame() {
         PLAYER_RENDER_QUEUE.buildSkinGroups();
+        PLAYER_GEOMETRY_DRAW_PLAN.build(PLAYER_RENDER_QUEUE.batchPlan(), PLAYER_GEOMETRY_ARENA.offsets(), PLAYER_GEOMETRY_ARENA.floatCounts(), PLAYER_GEOMETRY_ARENA.vertexCounts(), PLAYER_RENDER_QUEUE.size());
         if (PLAYER_GEOMETRY_ARENA.usedFloats() > 0) {
             lastUploadedPlayerGeometryBuffer = PLAYER_GEOMETRY_BUFFER_POOL.upload(PLAYER_GEOMETRY_ARENA);
         }
@@ -113,6 +115,7 @@ public final class AetherEngine {
     public static AetherInstanceBatch instanceBatch() { return INSTANCE_BATCH; }
     public static AetherPlayerRenderQueue playerRenderQueue() { return PLAYER_RENDER_QUEUE; }
     public static AetherPlayerGeometryArena playerGeometryArena() { return PLAYER_GEOMETRY_ARENA; }
+    public static AetherPlayerGeometryDrawPlan playerGeometryDrawPlan() { return PLAYER_GEOMETRY_DRAW_PLAN; }
     /** Captures the posed base model into the bounded frame arena; vanilla rendering is untouched. */
     public static boolean capturePlayerGeometry(int playerIndex, ModelPart root) {
         if (!RenderSystem.isOnRenderThread() || root == null) return false;

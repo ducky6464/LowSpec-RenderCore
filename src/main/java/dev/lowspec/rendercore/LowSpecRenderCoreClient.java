@@ -201,6 +201,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Overflow/rejected: " + playerGeometry.overflowCount()
                                             + "/" + playerGeometry.rejectedCount()
                                             + " | CPU capture only; vanilla draw remains active"));
+                            var drawPlan = AetherEngine.playerGeometryDrawPlan();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether GPU draw plan: " + drawPlan.packetCount() + " player ranges"
+                                            + " | " + drawPlan.batchCount() + " skin batches"
+                                            + " | Missing geometry: " + drawPlan.missingGeometryCount()
+                                            + " | Invalid ranges: " + drawPlan.rejectedRangeCount()));
                             var geometryPool = AetherEngine.playerGeometryBufferPool();
                             context.getSource().sendFeedback(Text.literal(
                                     "Aether player geometry GPU ring: " + geometryPool.successfulUploads()

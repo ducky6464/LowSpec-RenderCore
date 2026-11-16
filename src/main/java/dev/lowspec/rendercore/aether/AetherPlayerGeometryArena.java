@@ -84,6 +84,10 @@ public final class AetherPlayerGeometryArena {
     public long overflowCount() { return overflowCount; }
     public long rejectedCount() { return rejectedCount; }
     public float[] data() { return vertexData; }
+    /** Backing metadata for render-thread draw-plan construction; do not mutate. */
+    public int[] offsets() { return offsets; }
+    public int[] floatCounts() { return floatCounts; }
+    public int[] vertexCounts() { return vertexCounts; }
 
     public int offset(int playerIndex) { checkPlayer(playerIndex); return offsets[playerIndex]; }
     public int floatCount(int playerIndex) { checkPlayer(playerIndex); return floatCounts[playerIndex]; }

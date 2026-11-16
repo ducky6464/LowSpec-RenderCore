@@ -94,6 +94,7 @@ public final class AetherPlayerRenderQueue {
     public int playerBatchStart(int batch) { return batchPlan.batchStart(batch); }
     public int playerBatchSize(int batch) { return batchPlan.batchSize(batch); }
     public int playerBatchPlayerIndex(int batch, int offset) { return batchPlan.playerIndex(batch, offset); }
+    public AetherPlayerBatchPlan batchPlan() { return batchPlan; }
     public int skinGroupStart(int group) { return skinGroups.groupStart(group); }
     public int skinGroupSize(int group) { return skinGroups.groupSize(group); }
     public SkinTextures skinGroupTexture(int group) { return skins[skinGroups.representativeIndex(group)]; }
