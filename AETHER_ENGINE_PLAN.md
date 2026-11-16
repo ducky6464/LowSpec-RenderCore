@@ -205,6 +205,6 @@ Proposed modules:
 ### GPU-resident player geometry upload
 - Added AetherPlayerGeometryBufferPool, a three-slot fenced GPU vertex-buffer ring sized to the bounded CPU geometry arena.
 - At frame end, captured player geometry is uploaded as contiguous 8-float vertices (position, UV, normal) using the device command encoder's mapped buffer path.
-- Slot reuse is non-blocking: the pool polls fences with a zero timeout, skips when all slots are busy, and quarantines slots when mapping/fence state is uncertain.
+- Slot reuse is non-blocking: the pool polls fences with a zero timeout, skips when all slots are busy, and quarantines slots when mapping/fence state is uncertain. It also exposes a draw-completion fence hook so a future render pass can protect a slot until its draw completes.
 - The engine exposes the latest uploaded geometry buffer for the upcoming render-pass integration, closes the pool during render-thread shutdown, and reports upload/fence counters in /rendercore stats.
 - This moves captured base-player mesh data from CPU memory into GPU vertex buffers. It still does not bind a RenderPipeline, create a RenderPass, issue draw calls, or alter vanilla rendering. The uploaded geometry is currently a preparatory GPU resource, not a visible custom renderer.
