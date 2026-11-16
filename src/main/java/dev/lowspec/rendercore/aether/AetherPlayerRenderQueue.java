@@ -45,6 +45,13 @@ public final class AetherPlayerRenderQueue {
     private final float[] bodyYaw, pitch, headYaw, limbProgress, limbAmplitude, age, baseScale, ageScale;
     private final int[] light, outlineColor, flags, playerIds;
     private final float[] flyingRotation, glidingTicks;
+    // Stable, allocation-free grouping plan for snapshots sharing identical skin metadata.
+    private final int[] groupOfPlayer;
+    private final int[] groupStarts;
+    private final int[] groupSizes;
+    private final int[] groupWriteCursors;
+    private final int[] groupedPlayerIndices;
+    private int groupCount;
     private int size;
     private long overflowCount;
     private long rejectedCount;
@@ -74,11 +81,17 @@ public final class AetherPlayerRenderQueue {
         playerIds = new int[capacity];
         flyingRotation = new float[capacity];
         glidingTicks = new float[capacity];
+        groupOfPlayer = new int[capacity];
+        groupStarts = new int[capacity];
+        groupSizes = new int[capacity];
+        groupWriteCursors = new int[capacity];
+        groupedPlayerIndices = new int[capacity];
     }
 
     public void beginFrame() {
         Arrays.fill(skins, 0, size, null);
         size = 0;
+        groupCount = 0;
     }
 
     /** Snapshot the base-model inputs. Feature layers remain on vanilla. */
@@ -134,6 +147,62 @@ public final class AetherPlayerRenderQueue {
                 | (state.extraEars ? EXTRA_EARS : 0)
                 | (state.applyFlyingRotation ? APPLY_FLYING_ROTATION : 0);
         return true;
+    }
+
+    /**
+     * Builds a stable grouping plan by SkinTextures equality. This is CPU-side
+     * preparation only: it does not merge unlike render states or submit draws.
+     * The bounded O(n^2) search avoids hash-map allocation on the render thread.
+     */
+    public void buildSkinGroups() {
+        Arrays.fill(groupSizes, 0, groupCount, 0);
+        groupCount = 0;
+
+        for (int player = 0; player < size; player++) {
+            SkinTextures skin = skins[player];
+            int group = 0;
+            while (group < groupCount && !skins[groupOfPlayer[group]].equals(skin)) {
+                group++;
+            }
+            if (group == groupCount) {
+                groupOfPlayer[groupCount] = player;
+                groupCount++;
+            }
+            groupOfPlayer[player] = group;
+            groupSizes[group]++;
+        }
+
+        int offset = 0;
+        for (int group = 0; group < groupCount; group++) {
+            groupStarts[group] = offset;
+            groupWriteCursors[group] = offset;
+            offset += groupSizes[group];
+        }
+        for (int player = 0; player < size; player++) {
+            int group = groupOfPlayer[player];
+            groupedPlayerIndices[groupWriteCursors[group]++] = player;
+        }
+    }
+
+    public int skinGroupCount() { return groupCount; }
+    public int skinGroupStart(int group) { checkGroupIndex(group); return groupStarts[group]; }
+    public int skinGroupSize(int group) { checkGroupIndex(group); return groupSizes[group]; }
+    public SkinTextures skinGroupTexture(int group) {
+        checkGroupIndex(group);
+        return skins[groupOfPlayer[groupStarts[group]]];
+    }
+    public int skinGroupPlayerIndex(int group, int offset) {
+        checkGroupIndex(group);
+        if (offset < 0 || offset >= groupSizes[group]) {
+            throw new IndexOutOfBoundsException("skin group offset " + offset + " of " + groupSizes[group]);
+        }
+        return groupedPlayerIndices[groupStarts[group] + offset];
+    }
+
+    private void checkGroupIndex(int group) {
+        if (group < 0 || group >= groupCount) {
+            throw new IndexOutOfBoundsException("skin group " + group + " of " + groupCount);
+        }
     }
 
     public int size() { return size; }
