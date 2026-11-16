@@ -208,3 +208,12 @@ Proposed modules:
 - Slot reuse is non-blocking: the pool polls fences with a zero timeout, skips when all slots are busy, and quarantines slots when mapping/fence state is uncertain. It also exposes a draw-completion fence hook so a future render pass can protect a slot until its draw completes.
 - The engine exposes the latest uploaded geometry buffer for the upcoming render-pass integration, closes the pool during render-thread shutdown, and reports upload/fence counters in /rendercore stats.
 - This moves captured base-player mesh data from CPU memory into GPU vertex buffers. It still does not bind a RenderPipeline, create a RenderPass, issue draw calls, or alter vanilla rendering. The uploaded geometry is currently a preparatory GPU resource, not a visible custom renderer.
+
+
+### Skin-grouped GPU geometry draw planning
+- Added AetherPlayerGeometryDrawPlan, a fixed-capacity per-frame planner that turns eligible player batches plus captured arena metadata into explicit GPU vertex ranges.
+- Each packet records the source player snapshot index, first vertex, and vertex count; packets are grouped by the existing skin-group index while preserving stable player order.
+- Players with no captured mesh are omitted and counted. Misaligned offsets, inconsistent float/vertex counts, and capacity violations are rejected rather than passed to a future draw call.
+- The engine builds the plan after player capture and skin grouping. /rendercore stats reports packet count, skin batches, missing meshes, and invalid ranges.
+- Unit tests cover stable skin grouping, vertex offsets/counts, missing meshes, malformed ranges, and frame reset.
+- This is now a complete CPU-side description of which player vertex ranges a future skin-bound draw pass must submit. It still does not bind textures, create a RenderPass, issue GPU draw calls, or suppress vanilla rendering.
