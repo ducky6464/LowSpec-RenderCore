@@ -31,9 +31,17 @@ public final class AetherModelGeometryBuffer {
                 Math.multiplyExact(quadCapacity, VERTICES_PER_QUAD), FLOATS_PER_VERTEX)];
     }
 
-    /** Captures the current animated pose of every visible ModelPart cuboid. */
-    public boolean capture(ModelPart root, MatrixStack matrices) {
+    /** Render-thread entry point for live renderer integration. */
+    public boolean captureOnRenderThread(ModelPart root, MatrixStack matrices) {
         AetherRenderThread.assertCurrent();
+        return capture(root, matrices);
+    }
+
+    /**
+     * Captures the current animated pose of every visible ModelPart cuboid.
+     * The caller must ensure this is invoked on Minecraft's render thread.
+     */
+    public boolean capture(ModelPart root, MatrixStack matrices) {
         Objects.requireNonNull(root, "root");
         Objects.requireNonNull(matrices, "matrices");
         vertexCount = quadCount = cuboidCount = 0;
