@@ -35,15 +35,15 @@ public abstract class PlayerEntityRendererMixin {
     }
 
     /**
-     * Capture immediately before the base model is handed to the shared feature-model
-     * submission helper, while the renderer's entity transform is still on the stack.
+     * Capture immediately before the base model is added to the ordered render-command queue,
+     * while the renderer's entity transform is still on the stack.
      * Feature-layer submissions happen in their own renderers and stay vanilla.
      */
     @Inject(
             method = "render(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/render/state/CameraRenderState;)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/render/entity/feature/FeatureRenderer;renderModel(Lnet/minecraft/client/model/Model;Lnet/minecraft/util/Identifier;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;ILnet/minecraft/client/render/entity/state/LivingEntityRenderState;II)V",
+                    target = "Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;submitModel(Lnet/minecraft/client/model/Model;Ljava/lang/Object;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/RenderLayer;IIILnet/minecraft/client/texture/Sprite;ILnet/minecraft/client/render/command/ModelCommandRenderer$CrumblingOverlayCommand;)V",
                     shift = At.Shift.BEFORE
             )
     )
