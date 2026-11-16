@@ -165,3 +165,10 @@ Proposed modules:
 - The player snapshot queue now builds and exposes these batches after skin grouping. The planner uses preallocated arrays and rejects mismatched counts/capacity.
 - Unit tests cover stable ordering, fallback exclusion, omitted empty groups, rebuild/reset behavior, and invalid inputs.
 - This is still preparation data only. It does not generate model vertices, submit a RenderPipeline, issue GPU draws, or replace vanilla rendering.
+
+
+### Reusable base-model geometry groundwork
+- Added an allocation-free cuboid triangle-list writer for model-space geometry. It emits 36 vertices per cuboid with position, per-face UVs, and outward-facing normals into caller-owned arrays.
+- The writer validates finite bounds, positive dimensions, UV input, and destination capacity. It does not retain arrays or allocate per cuboid.
+- Unit tests cover vertex count, face normals, output offsets/bounds, and invalid input.
+- This is a generic geometry primitive for the upcoming player-model extraction stage. It is not yet wired to Minecraft's PlayerEntityModel/ModelPart and is not a complete player mesh or renderer.
