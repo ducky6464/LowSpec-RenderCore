@@ -172,3 +172,11 @@ Proposed modules:
 - The writer validates finite bounds, positive dimensions, UV input, and destination capacity. It does not retain arrays or allocate per cuboid.
 - Unit tests cover vertex count, face normals, output offsets/bounds, and invalid input.
 - This is a generic geometry primitive for the upcoming player-model extraction stage. It is not yet wired to Minecraft's PlayerEntityModel/ModelPart and is not a complete player mesh or renderer.
+
+
+### Live ModelPart geometry extraction
+- Added AetherModelGeometryBuffer, which captures the current posed cuboids from Minecraft's ModelPart.forEachCuboid traversal.
+- Each Minecraft face quad is expanded to two triangles with transformed model-space positions, original UV coordinates, and transformed normals.
+- Uses a caller-owned MatrixStack and reusable fixed-capacity float storage; overflow is bounded and reported instead of writing beyond the buffer.
+- Tests cover cuboid/quad/vertex counts, finite output, matrix translation, capacity overflow, and invalid capacity.
+- This is now a real CPU-side ModelPart geometry extraction primitive, but it is not yet connected to PlayerEntityRenderer or the GPU draw pipeline. The caller must pass the base player model root and preserve vanilla feature layers.
