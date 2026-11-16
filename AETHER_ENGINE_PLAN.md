@@ -57,7 +57,8 @@ Proposed modules:
    - The first controller uses entity-candidate volume and whole-frame time as rough pressure signals, then scales configured render distances with hysteresis.
    - It can reduce the visibility distance of remote players and non-player entities; it preserves the local player and camera entity.
    - This is not yet a strict visible-entity budget or a distance-prioritized scheduler. Candidate count is approximate, and whole-frame time can include unrelated chunk, GPU, and GUI costs.
-   - Next: prioritize nearby players and camera-relevant entities, add stable minimum hold times, and validate visual behavior in crowded scenes.
+   - Unit tests now cover distance scaling bounds, minimum-distance preservation, disabled/zero distances, and out-of-range scale clamping.
+- Next: prioritize nearby players and camera-relevant entities, add stable minimum hold times, and validate visual behavior in crowded scenes.
    - Never change server state or entity simulation.
 
 5. **Parallel Preparation**
