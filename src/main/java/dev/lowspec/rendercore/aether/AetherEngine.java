@@ -3,6 +3,7 @@ package dev.lowspec.rendercore.aether;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
+import dev.lowspec.rendercore.EntityGpuMetrics;
 
 /**
  * Public entry point for Aether's Minecraft-specialized rendering API.
@@ -62,6 +63,7 @@ public final class AetherEngine {
             return;
         }
         INSTANCE_BUFFER_POOL.close();
+        EntityGpuMetrics.close();
         lastUploadedInstanceBuffer = null;
     }
 

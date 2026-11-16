@@ -112,23 +112,27 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " (" + entityMetrics.playerExtractionsLastFrame() + " players)"
                                             + " | Render commands queued: " + entityMetrics.enqueuesLastFrame()
                                             + " (" + entityMetrics.playerEnqueuesLastFrame() + " players)"
-                                            + " | Avg extraction/frame: "
-                                            + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageExtractionMillisPerFrame())
-                                            + " | Avg command enqueue/frame: "
-                                            + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.averageEnqueueMillisPerFrame())));
+                                            + " | Extraction avg/p95: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f/%.3f ms", entityMetrics.averageExtractionMillisPerFrame(), entityMetrics.p95ExtractionMillisPerFrame())
+                                            + " | Enqueue avg/p95: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f/%.3f ms", entityMetrics.averageEnqueueMillisPerFrame(), entityMetrics.p95EnqueueMillisPerFrame())));
                             EntityGpuMetrics.Snapshot gpu = EntityGpuMetrics.snapshot();
                             context.getSource().sendFeedback(Text.literal(
                                     "RenderDispatcher GPU time: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg (%.3f ms last)",
                                                     gpu.averageMillis(), gpu.lastMillis())
                                             + " | Samples: " + gpu.samples()
+                                            + " | Pending: " + gpu.pendingQueries() + "/" + gpu.pendingHighWater()
+                                            + " | Busy/full skips: " + gpu.busySkips() + "/" + gpu.queueFullSkips()
+                                            + " | Discarded: " + gpu.discardedQueries()
                                             + " | Query available: " + gpu.querySupported()));
                             context.getSource().sendFeedback(Text.literal(
                                     "RenderDispatcher CPU dispatch: "
                                             + String.format(java.util.Locale.ROOT, "%.3f ms avg/frame (%.3f ms last)",
                                                     entityMetrics.averageDispatchMillisPerFrame(),
                                                     entityMetrics.dispatchMillisLastFrame())
-                                            + " | Calls last frame: " + entityMetrics.dispatchCallsLastFrame()));
+                                            + " | Calls last frame: " + entityMetrics.dispatchCallsLastFrame()
+                                            + " | Dispatch p95: " + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.p95DispatchMillisPerFrame())));
                             context.getSource().sendFeedback(Text.literal(
                                     "Lighting calls: " + light.calls()
                                             + " | Average call: "
@@ -190,6 +194,9 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                     "Aether GPU upload ring: " + aetherPool.successfulUploads() + " uploads"
                                             + " | " + aetherPool.skippedBusyUploads() + " skipped-busy"
                                             + " | " + aetherPool.failedUploads() + " failed"
+                                            + " | In-flight/quarantined: " + aetherPool.inFlightSlots() + "/" + aetherPool.quarantinedSlots()
+                                            + " | Draw fences: " + aetherPool.drawFenceUpdates()
+                                            + " | " + aetherPool.retainedBytes() + " bytes retained"
                                             + " | " + aetherPool.uploadedBytes() + " bytes uploaded"
                                             + " | Staged instances: " + AetherEngine.instanceBatch().instanceCount()));
                             return 1;

@@ -11,9 +11,10 @@ import java.nio.ByteBuffer;
 /**
  * Small non-blocking ring for uploading Aether instance records.
  *
- * A slot is not reused until its fence reports completion. If every slot is
- * still in flight, the upload is skipped rather than stalling the render
- * thread. This class only uploads data; it does not submit a draw.
+ * Upload completion is fenced before a slot can be reused. Once a renderer
+ * submits a draw using a returned buffer, it must call markDrawSubmitted()
+ * after closing that draw pass so the slot fence also covers the draw.
+ * If all slots are busy, an upload is skipped rather than stalling the frame.
  */
 public final class AetherInstanceBufferPool implements AutoCloseable {
     private static final int SLOT_COUNT = 3;
@@ -27,26 +28,30 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
     private long skippedBusyUploads;
     private long failedUploads;
     private long uploadedBytes;
+    private long drawFenceUpdates;
+    private long fenceErrors;
     private boolean closed;
 
     public AetherInstanceBufferPool() {
-        for (int i = 0; i < slots.length; i++) {
-            slots[i] = new Slot();
-        }
+        for (int i = 0; i < slots.length; i++) slots[i] = new Slot(i);
     }
 
     /**
-     * Uploads the batch into a free ring slot and returns its GPU buffer.
-     * Returns null for an empty batch or when all slots are still in flight.
+     * Uploads the current batch into a free ring slot and returns its GPU
+     * buffer. Returns null for empty input, a busy ring, or an upload failure.
      */
     public GpuBuffer upload(AetherInstanceBatch batch) {
         AetherRenderThread.assertCurrent();
-        if (closed) return null;
-        if (batch == null || batch.instanceCount() == 0) return null;
+        if (closed || batch == null || batch.instanceCount() == 0) return null;
 
         int byteCount = batch.usedBytes();
         if (byteCount <= 0 || byteCount > BUFFER_BYTES) {
             recordFailure("Invalid Aether instance upload size: " + byteCount, null);
+            return null;
+        }
+        ByteBuffer source = batch.dataForUpload();
+        if (source.remaining() != byteCount) {
+            recordFailure("Aether staging buffer size did not match its instance count", null);
             return null;
         }
 
@@ -56,23 +61,15 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
             return null;
         }
 
+        CommandEncoder encoder = null;
         try {
             if (slot.buffer == null || slot.buffer.isClosed()) {
                 slot.buffer = RenderSystem.getDevice().createBuffer(
-                        () -> "Aether instance upload slot",
-                        BUFFER_USAGE,
-                        BUFFER_BYTES);
+                        () -> "Aether instance upload slot " + slot.index,
+                        BUFFER_USAGE, BUFFER_BYTES);
             }
 
-            ByteBuffer source = batch.dataForUpload();
-            if (source.remaining() != byteCount) {
-                recordFailure("Aether staging buffer size did not match its instance count", null);
-                return null;
-            }
-
-            // Keep the upload and its fence on the same encoder so their
-            // ordering is explicit. The fence marks completion of this upload.
-            CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
+            encoder = RenderSystem.getDevice().createCommandEncoder();
             try (GpuBuffer.MappedView mapped = encoder.mapBuffer(
                     slot.buffer.slice(0L, byteCount), false, true)) {
                 mapped.data().put(source);
@@ -85,11 +82,48 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
             nextSlot = (slot.index + 1) % slots.length;
             return slot.buffer;
         } catch (RuntimeException exception) {
-            // Do not silently hide driver/API failures. Avoid logging every
-            // frame if a persistent driver problem occurs.
+            // A failed map may have partially queued GPU work. Quarantine the
+            // slot instead of reusing memory whose completion is uncertain.
+            if (encoder != null) {
+                try {
+                    slot.fence = encoder.createFence();
+                } catch (RuntimeException fenceException) {
+                    slot.quarantined = true;
+                    fenceErrors++;
+                    exception.addSuppressed(fenceException);
+                }
+            } else {
+                slot.quarantined = true;
+            }
             recordFailure("Aether instance buffer upload failed", exception);
             return null;
         }
+    }
+
+    /**
+     * Call after the render pass using this buffer has been closed/submitted.
+     * The new fence is ordered after the draw and supersedes the upload fence.
+     */
+    public boolean markDrawSubmitted(GpuBuffer buffer) {
+        AetherRenderThread.assertCurrent();
+        if (closed || buffer == null) return false;
+        for (Slot slot : slots) {
+            if (slot.buffer != buffer || slot.quarantined) continue;
+            try {
+                GpuFence drawFence = RenderSystem.getDevice().createCommandEncoder().createFence();
+                GpuFence previous = slot.fence;
+                slot.fence = drawFence;
+                if (previous != null) previous.close();
+                drawFenceUpdates++;
+                return true;
+            } catch (RuntimeException exception) {
+                slot.quarantined = true;
+                fenceErrors++;
+                recordFailure("Could not fence Aether draw-buffer use; slot quarantined", exception);
+                return false;
+            }
+        }
+        return false;
     }
 
     private void recordFailure(String message, RuntimeException exception) {
@@ -107,16 +141,22 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
         for (int offset = 0; offset < slots.length; offset++) {
             int index = (nextSlot + offset) % slots.length;
             Slot slot = slots[index];
+            if (slot.quarantined) continue;
             if (slot.fence == null) {
-                slot.index = index;
+                nextSlot = index;
                 return slot;
             }
-            if (slot.fence.awaitCompletion(0L)) {
+            try {
+                if (!slot.fence.awaitCompletion(0L)) continue;
                 slot.fence.close();
                 slot.fence = null;
                 slot.bytes = 0;
-                slot.index = index;
+                nextSlot = index;
                 return slot;
+            } catch (RuntimeException exception) {
+                slot.quarantined = true;
+                fenceErrors++;
+                recordFailure("Aether upload fence polling failed; slot quarantined", exception);
             }
         }
         return null;
@@ -126,7 +166,27 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
     public long skippedBusyUploads() { return skippedBusyUploads; }
     public long failedUploads() { return failedUploads; }
     public long uploadedBytes() { return uploadedBytes; }
+    public long drawFenceUpdates() { return drawFenceUpdates; }
+    public long fenceErrors() { return fenceErrors; }
     public int slotCount() { return slots.length; }
+
+    public int inFlightSlots() {
+        int count = 0;
+        for (Slot slot : slots) if (!slot.quarantined && slot.fence != null) count++;
+        return count;
+    }
+
+    public int quarantinedSlots() {
+        int count = 0;
+        for (Slot slot : slots) if (slot.quarantined) count++;
+        return count;
+    }
+
+    public int retainedBytes() {
+        int bytes = 0;
+        for (Slot slot : slots) if (slot.buffer != null && !slot.buffer.isClosed()) bytes += BUFFER_BYTES;
+        return bytes;
+    }
 
     @Override
     public void close() {
@@ -134,21 +194,28 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
         if (closed) return;
         closed = true;
         for (Slot slot : slots) {
+            boolean safeToClose = !slot.quarantined;
             if (slot.fence != null) {
-                // Do not allow a broken or lost graphics context to hang
-                // client shutdown forever. If the GPU does not signal within
-                // one second, leave the buffer for device teardown instead
-                // of explicitly releasing a resource that may still be busy.
-                boolean completed = slot.fence.awaitCompletion(1_000_000_000L);
-                slot.fence.close();
-                slot.fence = null;
-                if (!completed) {
+                try {
+                    safeToClose &= slot.fence.awaitCompletion(1_000_000_000L);
+                } catch (RuntimeException exception) {
+                    safeToClose = false;
                     LowSpecRenderCoreClient.LOGGER.warn(
-                            "Aether GPU upload slot {} did not finish before shutdown; deferring buffer cleanup to device teardown.",
-                            slot.index);
-                    slot.buffer = null;
-                    continue;
+                            "Aether GPU fence failed during shutdown for slot {}.", slot.index, exception);
                 }
+                try {
+                    slot.fence.close();
+                } catch (RuntimeException exception) {
+                    LowSpecRenderCoreClient.LOGGER.debug("Aether GPU fence cleanup failed.", exception);
+                }
+                slot.fence = null;
+            }
+            if (!safeToClose) {
+                LowSpecRenderCoreClient.LOGGER.warn(
+                        "Aether GPU slot {} could not be proven idle; deferring its buffer cleanup to device teardown.",
+                        slot.index);
+                slot.buffer = null;
+                continue;
             }
             if (slot.buffer != null) {
                 slot.buffer.close();
@@ -158,9 +225,12 @@ public final class AetherInstanceBufferPool implements AutoCloseable {
     }
 
     private static final class Slot {
-        private int index;
+        private final int index;
         private GpuBuffer buffer;
         private GpuFence fence;
         private int bytes;
+        private boolean quarantined;
+
+        private Slot(int index) { this.index = index; }
     }
 }

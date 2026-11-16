@@ -1,13 +1,14 @@
 package dev.lowspec.rendercore;
 
 import net.minecraft.client.gl.GlTimer;
+
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
 /**
  * Samples GPU execution time for RenderDispatcher with Minecraft's own timer
  * query abstraction. Results are polled asynchronously; this class never
- * waits for the GPU. It yields whenever Minecraft or another mod owns GlTimer.
+ * waits for the GPU and yields whenever another owner is using GlTimer.
  *
  * All methods are called on the render thread.
  */
@@ -19,7 +20,11 @@ public final class EntityGpuMetrics {
     private static int cursor;
     private static int sampleCount;
     private static long lastNanos;
-    private static long totalNanos;
+    private static long completedQueries;
+    private static long discardedQueries;
+    private static long busySkips;
+    private static long queueFullSkips;
+    private static int pendingHighWater;
     private static boolean querySupported = true;
 
     private EntityGpuMetrics() { }
@@ -32,18 +37,31 @@ public final class EntityGpuMetrics {
     public static boolean beginDispatch() {
         if (!enabled() || !querySupported) return false;
         pollAvailable();
-        if (pending.size() >= MAX_PENDING_QUERIES) return false;
+        if (pending.size() >= MAX_PENDING_QUERIES) {
+            queueFullSkips++;
+            return false;
+        }
 
         GlTimer timer = GlTimer.getInstance();
-        // GlTimer is shared with Minecraft's GPU-utilization profiling. Never
-        // nest queries or interfere with a query owned by vanilla/another mod.
-        if (timer.isRunning()) return false;
+        // GlTimer is shared with Minecraft's GPU profiler. Never nest a query
+        // or end a query that belongs to vanilla or another mod.
+        if (timer.isRunning()) {
+            busySkips++;
+            return false;
+        }
         try {
             timer.beginProfile();
-            return timer.isRunning();
+            if (!timer.isRunning()) {
+                querySupported = false;
+                LowSpecRenderCoreClient.LOGGER.debug(
+                        "Minecraft GPU timer did not start; Aether GPU timing is disabled.");
+                return false;
+            }
+            return true;
         } catch (RuntimeException exception) {
             querySupported = false;
-            LowSpecRenderCoreClient.LOGGER.debug("Aether GPU timer queries unavailable; CPU profiling remains active.", exception);
+            LowSpecRenderCoreClient.LOGGER.debug(
+                    "Aether GPU timer queries unavailable; CPU profiling remains active.", exception);
             return false;
         }
     }
@@ -52,15 +70,23 @@ public final class EntityGpuMetrics {
         if (!started) return;
         try {
             GlTimer.Query query = GlTimer.getInstance().endProfile();
-            if (query != null) pending.addLast(query);
+            if (query != null) {
+                pending.addLast(query);
+                pendingHighWater = Math.max(pendingHighWater, pending.size());
+            } else {
+                discardedQueries++;
+            }
         } catch (RuntimeException exception) {
             querySupported = false;
-            LowSpecRenderCoreClient.LOGGER.debug("Aether GPU timer query could not be closed; CPU profiling remains active.", exception);
+            discardedQueries++;
+            LowSpecRenderCoreClient.LOGGER.debug(
+                    "Aether GPU timer query could not be closed; CPU profiling remains active.", exception);
         }
     }
 
+    /** Polls only results already available; it never blocks for a query. */
     public static void pollAvailable() {
-        if (!querySupported || pending.isEmpty()) return;
+        if (pending.isEmpty()) return;
         Iterator<GlTimer.Query> iterator = pending.iterator();
         while (iterator.hasNext()) {
             GlTimer.Query query = iterator.next();
@@ -69,21 +95,40 @@ public final class EntityGpuMetrics {
                 long elapsed = query.queryResult();
                 query.close();
                 iterator.remove();
-                if (elapsed > 0L) record(elapsed);
+                if (elapsed > 0L) {
+                    record(elapsed);
+                    completedQueries++;
+                } else {
+                    discardedQueries++;
+                }
             } catch (RuntimeException exception) {
                 try { query.close(); } catch (RuntimeException ignored) { }
                 iterator.remove();
-                LowSpecRenderCoreClient.LOGGER.debug("Aether discarded an invalid GPU timer result.", exception);
+                discardedQueries++;
+                LowSpecRenderCoreClient.LOGGER.debug(
+                        "Aether discarded an invalid GPU timer result.", exception);
             }
         }
     }
 
     private static void record(long elapsedNanos) {
         lastNanos = elapsedNanos;
-        totalNanos += elapsedNanos;
         samplesNanos[cursor] = elapsedNanos;
         cursor = (cursor + 1) % WINDOW;
         if (sampleCount < WINDOW) sampleCount++;
+    }
+
+    /** Releases outstanding query objects during client shutdown. */
+    public static void close() {
+        while (!pending.isEmpty()) {
+            GlTimer.Query query = pending.removeFirst();
+            try {
+                query.close();
+            } catch (RuntimeException exception) {
+                LowSpecRenderCoreClient.LOGGER.debug(
+                        "Aether could not release a pending GPU timer query.", exception);
+            }
+        }
     }
 
     public static Snapshot snapshot() {
@@ -93,9 +138,12 @@ public final class EntityGpuMetrics {
         return new Snapshot(sampleCount,
                 sampleCount == 0 ? 0.0 : total / (double) sampleCount / 1_000_000.0,
                 lastNanos / 1_000_000.0,
-                querySupported);
+                querySupported, pending.size(), pendingHighWater,
+                completedQueries, discardedQueries, busySkips, queueFullSkips);
     }
 
     public record Snapshot(int samples, double averageMillis, double lastMillis,
-                           boolean querySupported) { }
+                           boolean querySupported, int pendingQueries, int pendingHighWater,
+                           long completedQueries, long discardedQueries,
+                           long busySkips, long queueFullSkips) { }
 }

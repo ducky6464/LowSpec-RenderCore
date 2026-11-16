@@ -1,5 +1,6 @@
 package dev.lowspec.rendercore;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.LongAdder;
 
 /** Low-allocation entity extraction and render-command enqueue measurements. */
@@ -11,8 +12,8 @@ public final class EntityRenderMetrics {
     private static int cursor;
     private static int samples;
 
-    // Extraction can be performed by more than one thread. LongAdder keeps the
-    // instrumentation safe without serializing every entity through one lock.
+    // Extraction may run on multiple worker threads. LongAdder avoids putting
+    // a contended monitor around each entity while retaining frame aggregates.
     private static final LongAdder frameExtractions = new LongAdder();
     private static final LongAdder frameEnqueues = new LongAdder();
     private static final LongAdder framePlayerExtractions = new LongAdder();
@@ -81,7 +82,7 @@ public final class EntityRenderMetrics {
         }
     }
 
-    /** Called once per frame; concurrent worker updates are safely accumulated. */
+    /** Called once per frame; worker-thread updates are accumulated safely. */
     public static synchronized void finishFrame() {
         extractionNanos[cursor] = frameExtractionNanos.sumThenReset();
         enqueueNanos[cursor] = frameEnqueueNanos.sumThenReset();
@@ -92,12 +93,20 @@ public final class EntityRenderMetrics {
         lastExtractions = frameExtractions.sumThenReset();
         lastEnqueues = frameEnqueues.sumThenReset();
         lastDispatchCalls = frameDispatchCalls.sumThenReset();
-        lastDispatchNanos = dispatchNanos[cursor == 0 ? WINDOW - 1 : cursor - 1];
+        lastDispatchNanos = dispatchNanos[(cursor + WINDOW - 1) % WINDOW];
         lastPlayerExtractions = framePlayerExtractions.sumThenReset();
         lastPlayerEnqueues = framePlayerEnqueues.sumThenReset();
     }
 
     public static long lastFrameEntityCpuNanos() { return lastFrameEntityCpuNanos; }
+
+    private static double percentileMillis(long[] ring, int count, double percentile) {
+        if (count == 0) return 0.0;
+        long[] ordered = Arrays.copyOf(ring, count);
+        Arrays.sort(ordered);
+        int index = Math.min(count - 1, Math.max(0, (int) Math.ceil(percentile * count) - 1));
+        return ordered[index] / 1_000_000.0;
+    }
 
     public static synchronized Snapshot snapshot() {
         long extraction = 0L;
@@ -116,7 +125,10 @@ public final class EntityRenderMetrics {
                 totalPlayerExtractions.sum(), totalPlayerEnqueues.sum(),
                 lastDispatchCalls, lastDispatchNanos / 1_000_000.0,
                 samples == 0 ? 0.0 : dispatch / (double) samples / 1_000_000.0,
-                totalDispatchCalls.sum(), totalDispatchNanos.sum());
+                totalDispatchCalls.sum(), totalDispatchNanos.sum(),
+                percentileMillis(extractionNanos, samples, 0.95),
+                percentileMillis(enqueueNanos, samples, 0.95),
+                percentileMillis(dispatchNanos, samples, 0.95));
     }
 
     public record Snapshot(int samples, long extractionsLastFrame, long enqueuesLastFrame,
@@ -126,5 +138,7 @@ public final class EntityRenderMetrics {
                            long totalPlayerExtractions, long totalPlayerEnqueues,
                            long dispatchCallsLastFrame, double dispatchMillisLastFrame,
                            double averageDispatchMillisPerFrame,
-                           long totalDispatchCalls, long totalDispatchNanos) { }
+                           long totalDispatchCalls, long totalDispatchNanos,
+                           double p95ExtractionMillisPerFrame, double p95EnqueueMillisPerFrame,
+                           double p95DispatchMillisPerFrame) { }
 }
