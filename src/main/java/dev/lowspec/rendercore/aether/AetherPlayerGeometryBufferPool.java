@@ -18,7 +18,7 @@ public final class AetherPlayerGeometryBufferPool implements AutoCloseable {
     private final int capacityBytes;
     private final Slot[] slots = new Slot[SLOT_COUNT];
     private int nextSlot;
-    private long successfulUploads, skippedBusyUploads, failedUploads, uploadedBytes, fenceErrors;
+    private long successfulUploads, skippedBusyUploads, failedUploads, uploadedBytes, fenceErrors, drawFenceUpdates;
     private boolean closed;
 
     public AetherPlayerGeometryBufferPool(int capacityFloats) {
@@ -79,6 +79,30 @@ public final class AetherPlayerGeometryBufferPool implements AutoCloseable {
         }
     }
 
+    /** Call after the render pass using this buffer has been closed/submitted. */
+    public boolean markDrawSubmitted(GpuBuffer buffer) {
+        AetherRenderThread.assertCurrent();
+        if (closed || buffer == null) return false;
+        for (Slot slot : slots) {
+            if (slot.buffer != buffer || slot.quarantined) continue;
+            try {
+                GpuFence drawFence = RenderSystem.getDevice().createCommandEncoder().createFence();
+                GpuFence previous = slot.fence;
+                slot.fence = drawFence;
+                if (previous != null) previous.close();
+                drawFenceUpdates++;
+                return true;
+            } catch (RuntimeException exception) {
+                slot.quarantined = true;
+                fenceErrors++;
+                LowSpecRenderCoreClient.LOGGER.warn(
+                        "Could not fence Aether player geometry draw; slot quarantined", exception);
+                return false;
+            }
+        }
+        return false;
+    }
+
     private Slot acquireSlot() {
         for (int offset = 0; offset < slots.length; offset++) {
             Slot slot = slots[(nextSlot + offset) % slots.length];
@@ -109,6 +133,12 @@ public final class AetherPlayerGeometryBufferPool implements AutoCloseable {
     public long failedUploads() { return failedUploads; }
     public long uploadedBytes() { return uploadedBytes; }
     public long fenceErrors() { return fenceErrors; }
+    public long drawFenceUpdates() { return drawFenceUpdates; }
+    public int retainedBytes() {
+        int bytes = 0;
+        for (Slot slot : slots) if (slot.buffer != null && !slot.buffer.isClosed()) bytes += capacityBytes;
+        return bytes;
+    }
     public int slotCount() { return slots.length; }
     public int capacityBytes() { return capacityBytes; }
     public int inFlightSlots() {
