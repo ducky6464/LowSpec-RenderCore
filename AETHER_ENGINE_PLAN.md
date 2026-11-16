@@ -217,3 +217,11 @@ Proposed modules:
 - The engine builds the plan after player capture and skin grouping. /rendercore stats reports packet count, skin batches, missing meshes, and invalid ranges.
 - Unit tests cover stable skin grouping, vertex offsets/counts, missing meshes, malformed ranges, and frame reset.
 - This is now a complete CPU-side description of which player vertex ranges a future skin-bound draw pass must submit. It still does not bind textures, create a RenderPass, issue GPU draw calls, or suppress vanilla rendering.
+
+
+### Compact GPU player vertex format
+- Added a declared 20-byte vertex layout matching Minecraft's VertexFormat API: float3 position, normalized-short2 UV, normalized-byte3 normal, and one padding byte.
+- Added a reusable allocation-free writer that converts the extractor's 8-float CPU vertices into the packed layout directly inside the mapped GPU buffer.
+- The GPU geometry ring now uploads 20 bytes per vertex instead of 32 bytes, reducing vertex transfer size by 37.5% while retaining position, UV, and normal data.
+- The declared VertexFormat verifies its stride and attribute offsets against the writer's byte layout. Tests cover exact encoded values, clamping, multiple vertices, invalid/non-finite input, insufficient output capacity, and format offsets.
+- This defines the vertex contract needed by the future custom shader/pipeline. Shader compilation, texture binding, RenderPass submission, and actual draw calls remain unfinished.
