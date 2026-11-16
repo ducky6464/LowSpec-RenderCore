@@ -51,7 +51,7 @@ public final class AetherEngine {
                 GpuBuffer uploaded = INSTANCE_BUFFER_POOL.upload(testBatch);
                 if (uploaded != null) {
                     uploadSelfTestPassed++;
-                    uploadSelfTestStatus = "passed: 72-byte GPU upload completed (no draw issued)";
+                    uploadSelfTestStatus = "passed: 72-byte GPU upload queued and fenced (no draw issued)";
                     lastUploadedInstanceBuffer = uploaded;
                 } else {
                     uploadSelfTestFailed++;

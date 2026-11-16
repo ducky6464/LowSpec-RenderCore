@@ -40,10 +40,10 @@ Wait for the next frame, then run:
 ```
 
 Expected:
-- `Aether upload self-test: passed`
+- `Aether upload self-test: passed` (the buffer map/write succeeded and an upload fence was created; it does not wait for GPU completion).
 - Upload count increases by one.
 - Failed uploads and fence errors stay at zero.
-- A small amount of retained GPU memory is expected (one 18 KiB ring slot).
+- A small amount of retained GPU memory is expected (one 18 KiB ring slot). The slot is checked for completion when the ring tries to reuse it.
 
 This test uploads one 72-byte identity record. It does **not** issue a draw call or change the picture on screen.
 
