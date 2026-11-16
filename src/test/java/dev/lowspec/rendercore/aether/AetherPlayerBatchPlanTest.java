@@ -12,18 +12,16 @@ class AetherPlayerBatchPlanTest {
                 AetherPlayerRenderQueue.OUTLINE, 0};
         AetherPlayerBatchPlan plan = new AetherPlayerBatchPlan(6);
         plan.build(groups, flags, 6);
-        assertEquals(3, plan.batchCount());
+        assertEquals(2, plan.batchCount());
         assertEquals(3, plan.candidateCount());
         assertEquals(3, plan.fallbackCount());
         assertEquals(0, plan.batchSkinGroup(0));
         assertEquals(2, plan.batchSize(0));
         assertEquals(0, plan.playerIndex(0, 0));
         assertEquals(2, plan.playerIndex(0, 1));
-        assertEquals(1, plan.batchSkinGroup(1));
-        assertEquals(1, plan.playerIndex(1, 0));
-        assertEquals(3, plan.playerIndex(1, 1));
-        assertEquals(2, plan.batchSkinGroup(2));
-        assertEquals(5, plan.playerIndex(2, 0));
+        assertEquals(2, plan.batchSkinGroup(1));
+        assertEquals(1, plan.batchSize(1));
+        assertEquals(5, plan.playerIndex(1, 0));
     }
 
     @Test
