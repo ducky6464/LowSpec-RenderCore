@@ -22,6 +22,9 @@ public final class AetherEngine {
             new AetherPlayerGeometryArena(128, 128, 128 * 128 * 48);
     private static final MatrixStack PLAYER_GEOMETRY_MATRICES = new MatrixStack();
     private static final AetherInstanceBufferPool INSTANCE_BUFFER_POOL = new AetherInstanceBufferPool();
+    private static final AetherPlayerGeometryBufferPool PLAYER_GEOMETRY_BUFFER_POOL =
+            new AetherPlayerGeometryBufferPool(PLAYER_GEOMETRY_ARENA.capacityFloats());
+    private static volatile GpuBuffer lastUploadedPlayerGeometryBuffer;
     private static volatile GpuBuffer lastUploadedInstanceBuffer;
     private static volatile boolean uploadSelfTestRequested;
     private static long uploadSelfTestRuns;
@@ -38,6 +41,7 @@ public final class AetherEngine {
         // This reference is valid only for the frame whose upload completed.
         // Never expose a previous frame's ring slot after it may be recycled.
         lastUploadedInstanceBuffer = null;
+        lastUploadedPlayerGeometryBuffer = null;
         if (!initialized) initialize();
         AetherBackend active = backend;
         if (active != null) active.beginFrame();
@@ -45,6 +49,9 @@ public final class AetherEngine {
 
     public static void endFrame() {
         PLAYER_RENDER_QUEUE.buildSkinGroups();
+        if (PLAYER_GEOMETRY_ARENA.usedFloats() > 0) {
+            lastUploadedPlayerGeometryBuffer = PLAYER_GEOMETRY_BUFFER_POOL.upload(PLAYER_GEOMETRY_ARENA);
+        }
         if (INSTANCE_BATCH.instanceCount() > 0) {
             lastUploadedInstanceBuffer = INSTANCE_BUFFER_POOL.upload(INSTANCE_BATCH);
         }
@@ -96,6 +103,7 @@ public final class AetherEngine {
             return;
         }
         INSTANCE_BUFFER_POOL.close();
+        PLAYER_GEOMETRY_BUFFER_POOL.close();
         EntityGpuMetrics.close();
         lastUploadedInstanceBuffer = null;
     }
@@ -111,6 +119,8 @@ public final class AetherEngine {
         return PLAYER_GEOMETRY_ARENA.captureOnRenderThread(playerIndex, root, PLAYER_GEOMETRY_MATRICES);
     }
     public static AetherInstanceBufferPool instanceBufferPool() { return INSTANCE_BUFFER_POOL; }
+    public static AetherPlayerGeometryBufferPool playerGeometryBufferPool() { return PLAYER_GEOMETRY_BUFFER_POOL; }
+    public static GpuBuffer lastUploadedPlayerGeometryBuffer() { return lastUploadedPlayerGeometryBuffer; }
     public static GpuBuffer lastUploadedInstanceBuffer() { return lastUploadedInstanceBuffer; }
     /** Queues a one-record upload smoke test for the next render-thread frame end. */
     public static boolean requestUploadSelfTest() {
