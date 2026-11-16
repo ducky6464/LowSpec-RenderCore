@@ -11,8 +11,8 @@ import net.minecraft.util.Identifier;
 /**
  * Registers the first Aether base-player shader pipeline.
  *
- * The pipeline is deliberately not submitted yet. Vanilla player drawing remains
- * authoritative until the render-pass handoff and compatibility checks are ready.
+ * The pipeline is used by the opt-in mirror render pass. Vanilla player drawing
+ * remains authoritative; the mirror does not replace or suppress vanilla commands.
  */
 public final class AetherPlayerPipeline {
     private static final Identifier LOCATION =
