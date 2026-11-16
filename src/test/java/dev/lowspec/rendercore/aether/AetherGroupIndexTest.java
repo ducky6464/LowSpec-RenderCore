@@ -71,6 +71,40 @@ class AetherGroupIndexTest {
     }
 
     @Test
+    void rebuildsAgainstDifferentKeyArrayWithoutStaleRepresentatives() {
+        AetherGroupIndex<String> groups = new AetherGroupIndex<>(4);
+        groups.build(new String[]{"red", "blue", "red", "green"}, 4);
+        groups.build(new String[]{"green", "green", "red"}, 3);
+
+        assertEquals(2, groups.groupCount());
+        assertEquals(2, groups.groupSize(0));
+        assertEquals(1, groups.groupSize(1));
+        assertEquals(0, groups.representativeIndex(0));
+        assertEquals(2, groups.representativeIndex(1));
+        assertEquals(0, groups.itemIndex(0, 0));
+        assertEquals(1, groups.itemIndex(0, 1));
+        assertEquals(2, groups.itemIndex(1, 0));
+    }
+
+    @Test
+    void handlesAllUniqueAndAllEqualKeysAtCapacity() {
+        AetherGroupIndex<Integer> groups = new AetherGroupIndex<>(4);
+        Integer[] unique = {1, 2, 3, 4};
+        groups.build(unique, unique.length);
+        assertEquals(4, groups.groupCount());
+        for (int i = 0; i < 4; i++) {
+            assertEquals(1, groups.groupSize(i));
+            assertEquals(i, groups.itemIndex(i, 0));
+        }
+
+        Integer[] equal = {7, 7, 7, 7};
+        groups.build(equal, equal.length);
+        assertEquals(1, groups.groupCount());
+        assertEquals(4, groups.groupSize(0));
+        for (int i = 0; i < 4; i++) assertEquals(i, groups.itemIndex(0, i));
+    }
+
+    @Test
     void rejectsZeroCapacity() {
         assertThrows(IllegalArgumentException.class, () -> new AetherGroupIndex<>(0));
     }
