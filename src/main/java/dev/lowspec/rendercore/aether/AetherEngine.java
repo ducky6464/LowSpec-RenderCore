@@ -38,6 +38,7 @@ public final class AetherEngine {
     }
 
     public static void endFrame() {
+        PLAYER_RENDER_QUEUE.buildSkinGroups();
         if (INSTANCE_BATCH.instanceCount() > 0) {
             lastUploadedInstanceBuffer = INSTANCE_BUFFER_POOL.upload(INSTANCE_BATCH);
         }
