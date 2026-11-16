@@ -1,5 +1,6 @@
 package dev.lowspec.rendercore.mixin;
 
+import dev.lowspec.rendercore.AdaptiveEntityVisibility;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import dev.lowspec.rendercore.RenderCoreConfig;
 import net.minecraft.client.MinecraftClient;
@@ -26,18 +27,22 @@ public abstract class EntityRenderManagerMixin {
             at = @At("HEAD"),
             cancellable = true
     )
-    private <E extends Entity> void lowspec$applyEntityDistanceLimit(
+    private <E extends Entity> void lowspec$applyEntityVisibilityPolicy(
             E entity, Frustum frustum, double cameraX, double cameraY, double cameraZ,
             CallbackInfoReturnable<Boolean> cir
     ) {
+        boolean player = entity instanceof PlayerEntity;
+        AdaptiveEntityVisibility.recordCandidate(player);
         RenderCoreConfig config = LowSpecRenderCoreClient.CONFIG;
-        if (config == null || !config.entityDistanceCullingEnabled) return;
+        if (config == null) return;
 
         MinecraftClient client = MinecraftClient.getInstance();
         if (entity == client.player || entity == client.getCameraEntity()) return;
 
+        double adaptiveScale = config.adaptiveEntityVisibilityEnabled
+                ? AdaptiveEntityVisibility.getDistanceScale() : 1.0;
         int maxDistance = -1;
-        if (entity instanceof PlayerEntity) {
+        if (player) {
             maxDistance = config.playerRenderDistance;
         } else if (entity instanceof VillagerEntity) {
             maxDistance = config.villagerRenderDistance;
@@ -55,8 +60,15 @@ public abstract class EntityRenderManagerMixin {
             maxDistance = config.armorStandRenderDistance;
         }
 
-        if (maxDistance >= 0
-                && entity.squaredDistanceTo(cameraX, cameraY, cameraZ) > (double) maxDistance * maxDistance) {
+        if (maxDistance < 0) return;
+        if (!config.entityDistanceCullingEnabled && adaptiveScale >= 1.0) return;
+        if (config.adaptiveEntityVisibilityEnabled || config.entityDistanceCullingEnabled) {
+            int minimumDistance = player ? 24 : 8;
+            maxDistance = AdaptiveEntityVisibility.scaledDistance(
+                    maxDistance, minimumDistance,
+                    config.adaptiveEntityVisibilityEnabled ? adaptiveScale : 1.0);
+        }
+        if (entity.squaredDistanceTo(cameraX, cameraY, cameraZ) > (double) maxDistance * maxDistance) {
             cir.setReturnValue(false);
         }
     }

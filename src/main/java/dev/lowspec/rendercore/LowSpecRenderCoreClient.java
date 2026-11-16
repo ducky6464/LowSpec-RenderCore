@@ -6,10 +6,12 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.render.WorldRenderer;
 import net.minecraft.text.Text;
 import dev.lowspec.rendercore.mixin.WorldRendererInvoker;
+import dev.lowspec.rendercore.aether.AetherEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +42,20 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         LOGGER.info("WorldRendererInvoker mixin verified.");
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
         RenderCoreHud.register();
+        // Use the lifecycle event for the visual smoke test. Waiting for a
+        // TitleScreen inside END_CLIENT_TICK can miss startup transitions on
+        // slower virtualized renderers, leaving the test waiting forever.
+        ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+            if (Boolean.getBoolean("lowspec.rendercore.testConfigScreen")) {
+                client.execute(() -> {
+                    if (!configScreenTestOpened) {
+                        configScreenTestOpened = true;
+                        client.setScreen(new RenderCoreConfigScreen(client.currentScreen));
+                        LOGGER.info("RENDERCORE_CONFIG_SCREEN_TEST_READY");
+                    }
+                });
+            }
+        });
         ClientTickEvents.START_CLIENT_TICK.register(client -> {
             tickStartNanos = System.nanoTime();
             currentClientTickStartNanos = tickStartNanos;
@@ -90,6 +106,34 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + String.format(java.util.Locale.ROOT, "%.2f ms avg / %.2f ms p95",
                                                     frame.averageRenderMillis(), frame.p95RenderMillis())
                                             + " | Samples: " + frame.samples()));
+                            EntityRenderMetrics.Snapshot entityMetrics = EntityRenderMetrics.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether entity pipeline | Extracted: " + entityMetrics.extractionsLastFrame()
+                                            + " (" + entityMetrics.playerExtractionsLastFrame() + " players)"
+                                            + " | Render commands queued: " + entityMetrics.enqueuesLastFrame()
+                                            + " (" + entityMetrics.playerEnqueuesLastFrame() + " players)"
+                                            + " | Extraction avg/p95: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f/%.3f ms", entityMetrics.averageExtractionMillisPerFrame(), entityMetrics.p95ExtractionMillisPerFrame())
+                                            + " | Enqueue avg/p95: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f/%.3f ms", entityMetrics.averageEnqueueMillisPerFrame(), entityMetrics.p95EnqueueMillisPerFrame())));
+                            EntityGpuMetrics.Snapshot gpu = EntityGpuMetrics.snapshot();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "RenderDispatcher GPU time: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms avg (%.3f ms last)",
+                                                    gpu.averageMillis(), gpu.lastMillis())
+                                            + " | Samples: " + gpu.samples()
+                                            + " | Pending: " + gpu.pendingQueries() + "/" + gpu.pendingHighWater()
+                                            + " | Busy/full skips: " + gpu.busySkips() + "/" + gpu.queueFullSkips()
+                                            + " | Discarded: " + gpu.discardedQueries()
+                                            + " | Query available: " + gpu.querySupported()
+                                            + " | Scope: RenderDispatcher call only; not total entity GPU cost"));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "RenderDispatcher CPU dispatch: "
+                                            + String.format(java.util.Locale.ROOT, "%.3f ms avg/frame (%.3f ms last)",
+                                                    entityMetrics.averageDispatchMillisPerFrame(),
+                                                    entityMetrics.dispatchMillisLastFrame())
+                                            + " | Calls last frame: " + entityMetrics.dispatchCallsLastFrame()
+                                            + " | Dispatch p95: " + String.format(java.util.Locale.ROOT, "%.3f ms", entityMetrics.p95DispatchMillisPerFrame())));
                             context.getSource().sendFeedback(Text.literal(
                                     "Lighting calls: " + light.calls()
                                             + " | Average call: "
@@ -133,11 +177,55 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                             context.getSource().sendFeedback(Text.literal(
                                     "Entity distance culling: "
                                             + (CONFIG.entityDistanceCullingEnabled ? "ON" : "OFF")));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether adaptive visibility: "
+                                            + (CONFIG.adaptiveEntityVisibilityEnabled ? "ON" : "OFF")
+                                            + " | Candidates/frame: " + AdaptiveEntityVisibility.getLastCandidateCount()
+                                            + " | Player candidates: " + AdaptiveEntityVisibility.getLastPlayerCandidateCount()
+                                            + " | Distance scale: "
+                                            + String.format(java.util.Locale.ROOT, "%.0f%%",
+                                                    AdaptiveEntityVisibility.getDistanceScale() * 100.0)));
+                            var playerQueue = AetherEngine.playerRenderQueue();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether player snapshots: " + playerQueue.size() + "/" + playerQueue.capacity()
+                                            + " captured this frame | " + playerQueue.overflowCount() + " capacity overflows"
+                                            + " | " + playerQueue.rejectedCount() + " rejected"
+                                            + " | Skin groups prepared: " + playerQueue.skinGroupCount()
+                                            + " | Custom-base candidates: " + playerQueue.customBaseModelCandidates()
+                                            + " | Vanilla fallbacks: " + playerQueue.vanillaFallbackCandidates()));
+                            var aetherPool = AetherEngine.instanceBufferPool();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether GPU upload ring: " + aetherPool.successfulUploads() + " uploads"
+                                            + " | " + aetherPool.skippedBusyUploads() + " skipped-busy"
+                                            + " | " + aetherPool.failedUploads() + " failed"
+                                            + " | In-flight/quarantined: " + aetherPool.inFlightSlots() + "/" + aetherPool.quarantinedSlots()
+                                            + " | Draw fences: " + aetherPool.drawFenceUpdates()
+                                            + " | " + aetherPool.retainedBytes() + " bytes retained"
+                                            + " | " + aetherPool.uploadedBytes() + " bytes uploaded"
+                                            + " | Staged instances: " + AetherEngine.instanceBatch().instanceCount()
+                                            + "/" + AetherEngine.instanceBatch().capacity()
+                                            + " | Staging overflows: " + AetherEngine.instanceBatch().overflowCount()
+                                            + " | Fence errors: " + aetherPool.fenceErrors()));
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether upload self-test: " + AetherEngine.uploadSelfTestStatus()
+                                            + " | " + AetherEngine.uploadSelfTestPassed() + " passed / "
+                                            + AetherEngine.uploadSelfTestFailed() + " failed"));
                             return 1;
                         }))
+                        .then(ClientCommandManager.literal("aether")
+                                .then(ClientCommandManager.literal("upload-test").executes(context -> {
+                                    boolean queued = AetherEngine.requestUploadSelfTest();
+                                    context.getSource().sendFeedback(Text.literal(queued
+                                            ? "Aether GPU upload test queued. Run /rendercore stats after the next frame."
+                                            : "An Aether upload test is already queued."));
+                                    return 1;
+                                })))
                         .then(ClientCommandManager.literal("culling")
                                 .then(ClientCommandManager.literal("on").executes(context -> setCulling(context.getSource(), true)))
                                 .then(ClientCommandManager.literal("off").executes(context -> setCulling(context.getSource(), false))))
+                        .then(ClientCommandManager.literal("adaptive")
+                                .then(ClientCommandManager.literal("on").executes(context -> setAdaptiveVisibility(context.getSource(), true)))
+                                .then(ClientCommandManager.literal("off").executes(context -> setAdaptiveVisibility(context.getSource(), false))))
                         .then(ClientCommandManager.literal("distance")
                                 .then(distanceCommand("players"))
                                 .then(distanceCommand("hostile"))
@@ -187,6 +275,17 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
             source.sendFeedback(Text.literal("Render distance for " + category + " set to " + value + " blocks."));
         } catch (IOException exception) {
             source.sendFeedback(Text.literal("Could not save LowSpec RenderCore settings: " + exception.getMessage()));
+        }
+        return 1;
+    }
+
+    private static int setAdaptiveVisibility(FabricClientCommandSource source, boolean enabled) {
+        CONFIG.adaptiveEntityVisibilityEnabled = enabled;
+        try {
+            CONFIG.save(FabricLoader.getInstance().getConfigDir());
+            source.sendFeedback(Text.literal("Aether adaptive entity visibility: " + (enabled ? "ON" : "OFF")));
+        } catch (IOException exception) {
+            source.sendFeedback(Text.literal("Could not save Aether settings: " + exception.getMessage()));
         }
         return 1;
     }

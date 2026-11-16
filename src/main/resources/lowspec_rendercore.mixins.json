@@ -5,6 +5,9 @@
   "client": [
     "LightingProviderMixin",
     "EntityRenderManagerMixin",
+    "EntityRenderProfilingMixin",
+    "PlayerEntityRendererMixin",
+    "RenderDispatcherMetricsMixin",
     "GameRendererMetricsMixin",
     "ParticleManagerMixin",
     "BlockEntityRenderManagerMixin",

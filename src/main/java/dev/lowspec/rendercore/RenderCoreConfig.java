@@ -24,6 +24,8 @@ public final class RenderCoreConfig {
     public boolean lightingShapeCacheEnabled = true;
     public int chunkUploadsPerFrame = 8;
     public boolean entityDistanceCullingEnabled = true;
+    public boolean adaptiveEntityVisibilityEnabled = true;
+    public int adaptiveEntityCandidateBudget = 120;
     public boolean particleBudgetEnabled = true;
     public int maxParticlesPerTick = 400;
     public boolean performanceHudEnabled = false;
@@ -62,6 +64,8 @@ public final class RenderCoreConfig {
             config.lightingShapeCacheEnabled = Boolean.parseBoolean(p.getProperty("lighting.shape_cache_enabled", "true"));
             config.chunkUploadsPerFrame = bounded(p.getProperty("chunks.uploads_per_frame", "8"), 8, 1, 64);
             config.entityDistanceCullingEnabled = Boolean.parseBoolean(p.getProperty("render.entity_distance_culling", "true"));
+            config.adaptiveEntityVisibilityEnabled = Boolean.parseBoolean(p.getProperty("aether.adaptive_visibility", "true"));
+            config.adaptiveEntityCandidateBudget = bounded(p.getProperty("aether.entity_candidate_budget", "120"), 120, 20, 1000);
             config.particleBudgetEnabled = Boolean.parseBoolean(p.getProperty("particles.budget_enabled", "true"));
             config.maxParticlesPerTick = bounded(p.getProperty("particles.max_per_tick", "400"), 400, 50, 2000);
             config.performanceHudEnabled = Boolean.parseBoolean(p.getProperty("hud.performance_enabled", "false"));
@@ -96,6 +100,8 @@ public final class RenderCoreConfig {
         p.setProperty("lighting.shape_cache_enabled", Boolean.toString(lightingShapeCacheEnabled));
         p.setProperty("chunks.uploads_per_frame", Integer.toString(chunkUploadsPerFrame));
         p.setProperty("render.entity_distance_culling", Boolean.toString(entityDistanceCullingEnabled));
+        p.setProperty("aether.adaptive_visibility", Boolean.toString(adaptiveEntityVisibilityEnabled));
+        p.setProperty("aether.entity_candidate_budget", Integer.toString(adaptiveEntityCandidateBudget));
         p.setProperty("particles.budget_enabled", Boolean.toString(particleBudgetEnabled));
         p.setProperty("particles.max_per_tick", Integer.toString(maxParticlesPerTick));
         p.setProperty("hud.performance_enabled", Boolean.toString(performanceHudEnabled));

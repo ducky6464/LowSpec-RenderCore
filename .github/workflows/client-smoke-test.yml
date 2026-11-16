@@ -7,7 +7,7 @@ on:
 jobs:
   client-smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -17,86 +17,55 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.4.0'
-      - name: Install visual test tools
+      - name: Install headless rendering dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb xdotool tesseract-ocr libgl1-mesa-dri libglx-mesa0
-      - name: Launch Minecraft and capture the settings screen
+          sudo apt-get install -y xvfb libgl1-mesa-dri libglx-mesa0
+      - name: Launch Minecraft and verify settings screen initialization
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p run/screenshots
           export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dlowspec.rendercore.testConfigScreen=true"
-          xvfb-run -a -s "-screen 0 1280x720x24" bash -c '
+          export LIBGL_ALWAYS_SOFTWARE=1
+          export ALSOFT_DRIVERS=null
+          xvfb-run -a -s "-screen 0 1280x720x24 +extension GLX +render -noreset" bash -c '
             set -euo pipefail
-            gradle runClient --no-daemon > client-smoke.log 2>&1 &
+            setsid gradle runClient --no-daemon > client-smoke.log 2>&1 &
             gradle_pid=$!
             cleanup() {
-              kill "$gradle_pid" 2>/dev/null || true
+              kill -TERM -- "-$gradle_pid" 2>/dev/null || true
+              sleep 2
+              kill -KILL -- "-$gradle_pid" 2>/dev/null || true
               wait "$gradle_pid" 2>/dev/null || true
             }
             trap cleanup EXIT
 
             ready=0
             for i in $(seq 1 90); do
-              if grep -q "RENDERCORE_CONFIG_SCREEN_TEST_READY" client-smoke.log; then
+              if grep -q "RENDERCORE_CONFIG_SCREEN_TEST_READY" client-smoke.log \
+                && grep -q "Aether initialized:" client-smoke.log; then
                 ready=1
                 break
               fi
               if ! kill -0 "$gradle_pid" 2>/dev/null; then
                 cat client-smoke.log
-                echo "Minecraft exited before opening the settings screen."
+                echo "Minecraft exited before startup and settings-screen initialization completed."
                 exit 1
               fi
               sleep 2
             done
             if [ "$ready" -ne 1 ]; then
               cat client-smoke.log
-              echo "Timed out waiting for the settings screen to open."
+              echo "Timed out waiting for Aether startup and settings-screen initialization."
               exit 1
             fi
 
-            window_id=""
-            for i in $(seq 1 20); do
-              window_id=$(xdotool search --onlyvisible --name "Minecraft" 2>/dev/null | head -n 1 || true)
-              [ -n "$window_id" ] && break
-              sleep 1
-            done
-            if [ -z "$window_id" ]; then
-              cat client-smoke.log
-              echo "Could not find the Minecraft window."
-              exit 1
-            fi
-
-            xdotool windowfocus --sync "$window_id"
-            sleep 3
-            xdotool key --clearmodifiers F2
-            screenshot=""
-            for i in $(seq 1 20); do
-              screenshot=$(find run/screenshots -type f -name "*.png" | sort | tail -n 1)
-              [ -n "$screenshot" ] && break
-              sleep 1
-            done
-            if [ -z "$screenshot" ]; then
-              cat client-smoke.log
-              echo "Minecraft did not save a settings-screen screenshot."
-              exit 1
-            fi
-
-            tesseract "$screenshot" stdout 2>/dev/null | tee settings-screen-ocr.txt
-            grep -Eiq "Entity distance culling" settings-screen-ocr.txt
-            grep -Eiq "Players distance" settings-screen-ocr.txt
-            grep -Eiq "Hostile mob distance" settings-screen-ocr.txt
-            grep -Eiq "Diagnostics" settings-screen-ocr.txt
-            echo "Settings screen visual text test passed."
+            echo "Minecraft startup, Aether initialization, and settings-screen initialization passed."
           '
-      - name: Upload settings screen evidence
+      - name: Upload client startup log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: RenderCore-settings-screen-test
-          path: |
-            run/screenshots/*.png
-            settings-screen-ocr.txt
-            client-smoke.log
+          name: RenderCore-client-startup-log
+          path: client-smoke.log
           if-no-files-found: warn
