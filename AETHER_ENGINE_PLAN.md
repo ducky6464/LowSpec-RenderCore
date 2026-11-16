@@ -101,7 +101,10 @@ Proposed modules:
 - A real custom GPU entity pipeline is not implemented yet.
 
 ### Phase 3: Player batch prototype
-- Not started. Requires a narrow compatibility boundary, immutable player render-state snapshots, and a real 1.21.11 render-pipeline implementation.
+- In progress: a bounded per-frame player render-state snapshot queue now captures player identity, skin, transforms, animation inputs, lighting, visibility flags, skin-layer visibility, cape visibility, and flight pose values.
+- A mixin captures only PlayerEntityRenderState instances at the LivingEntityRenderer extraction entry point.
+- The snapshot queue is render-thread confined and does not retain live player entities.
+- The custom player geometry builder, texture-compatible batch grouping, RenderPipeline submission, and GPU draw pass are still not implemented.
 - Retain vanilla fallback for every unsupported visual.
 - Validate on 1.21.11 and the Chromebook's actual OpenGL stack before expanding.
 
@@ -135,7 +138,7 @@ Proposed modules:
 - Fabric 1.21.11 rendering concepts: https://github.com/FabricMC/fabric-docs/blob/main/versions/1.21.11/develop/rendering/basic-concepts.md
 - Fabric 1.21.11 world extraction/drawing and custom pipeline example: https://github.com/FabricMC/fabric-docs/blob/main/versions/1.21.11/develop/rendering/world.md
 
-## Current implementation status (2026-11-14)
+## Current implementation status (2026-11-16)
 
 - Aether API/lifecycle foundation and vanilla fallback exist.
 - AEV currently scales configured visibility distances under rough entity/frame pressure; it is not a full priority-based budget.
@@ -144,4 +147,8 @@ Proposed modules:
 - Commit `8f63031a29d536f75820f777f8d6c04ff02bdc06` contains the profiler/capability corrections. Its build and client startup/settings-screen smoke test are still running.
 - The previous revision's Gradle build passed. Do not treat that as validation of the newer commit.
 - The settings-screen smoke test was failing because xdotool could not match the GLFW window title even though Minecraft logged the screen-ready marker. The workflow now captures the Xvfb root window directly and validates the rendered text.
-- Next: finish CI validation, then use CPU and asynchronous GPU dispatch measurements to choose the player-batch prototype boundary. Implement through Minecraft 1.21.11's current render pipeline with strict vanilla fallback.
+- A bounded player render-state queue and LivingEntityRenderer capture mixin have been added on branch `aether-engine-prototype`.
+- The queue now retains the player skin, player ID, base transforms/animation inputs, lighting/outline, visibility state, skin overlay visibility, cape visibility, and gliding pose values. It does not retain the live player object.
+- GitHub Actions for the player-state capture revision passed: Gradle build and client startup/settings-screen smoke test. This validates compilation and initialization, not in-world GPU rendering.
+- The current queue is only an extraction/snapshot stage. It does not generate player mesh vertices, group by skin/material, submit a custom RenderPipeline, or issue a custom GPU draw. Vanilla remains the only active renderer.
+- Next: implement and test a minimal base-player geometry extraction and custom draw pass using the 1.21.11 RenderPipeline/RenderPass APIs, while leaving unsupported layers on vanilla. Do not claim performance gains until measured on the target Chromebook.
