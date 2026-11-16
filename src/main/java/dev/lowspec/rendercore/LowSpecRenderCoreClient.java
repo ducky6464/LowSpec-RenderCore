@@ -41,6 +41,12 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
         }
         LOGGER.info("WorldRendererInvoker mixin verified.");
         CONFIG = RenderCoreConfig.load(FabricLoader.getInstance().getConfigDir());
+        try {
+            dev.lowspec.rendercore.aether.AetherPlayerPipeline.register();
+            LOGGER.info("Aether player shader pipeline registered; vanilla player drawing remains active.");
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Aether player shader pipeline could not be registered; vanilla rendering remains active.", exception);
+        }
         RenderCoreHud.register();
         // Use the lifecycle event for the visual smoke test. Waiting for a
         // TitleScreen inside END_CLIENT_TICK can miss startup transitions on

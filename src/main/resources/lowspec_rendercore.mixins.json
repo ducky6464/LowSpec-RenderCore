@@ -21,7 +21,8 @@
     "BuffersGpuPoolMixin",
     "ChunkLightProviderStateCacheMixin",
     "ChunkLightProviderShapeCacheMixin",
-    "MinecraftClientGpuPoolCleanupMixin"
+    "MinecraftClientGpuPoolCleanupMixin",
+    "RenderPipelinesInvoker"
   ],
   "injectors": {
     "defaultRequire": 1
