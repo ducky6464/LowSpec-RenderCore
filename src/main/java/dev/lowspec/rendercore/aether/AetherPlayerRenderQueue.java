@@ -45,14 +45,7 @@ public final class AetherPlayerRenderQueue {
     private final float[] bodyYaw, pitch, headYaw, limbProgress, limbAmplitude, age, baseScale, ageScale;
     private final int[] light, outlineColor, flags, playerIds;
     private final float[] flyingRotation, glidingTicks;
-    // Stable, allocation-free grouping plan for snapshots sharing identical skin metadata.
-    private final int[] groupOfPlayer;
-    private final int[] groupRepresentatives;
-    private final int[] groupStarts;
-    private final int[] groupSizes;
-    private final int[] groupWriteCursors;
-    private final int[] groupedPlayerIndices;
-    private int groupCount;
+    private final AetherGroupIndex<SkinTextures> skinGroups;
     private int size;
     private long overflowCount;
     private long rejectedCount;
@@ -82,19 +75,13 @@ public final class AetherPlayerRenderQueue {
         playerIds = new int[capacity];
         flyingRotation = new float[capacity];
         glidingTicks = new float[capacity];
-        groupOfPlayer = new int[capacity];
-        groupRepresentatives = new int[capacity];
-        groupStarts = new int[capacity];
-        groupSizes = new int[capacity];
-        groupWriteCursors = new int[capacity];
-        groupedPlayerIndices = new int[capacity];
+        skinGroups = new AetherGroupIndex<>(capacity);
     }
 
     public void beginFrame() {
         Arrays.fill(skins, 0, size, null);
-        Arrays.fill(groupSizes, 0, groupCount, 0);
+        skinGroups.clear();
         size = 0;
-        groupCount = 0;
     }
 
     /** Snapshot the base-model inputs. Feature layers remain on vanilla. */
@@ -152,59 +139,19 @@ public final class AetherPlayerRenderQueue {
         return true;
     }
 
-    /**
-     * Builds a stable grouping plan by SkinTextures equality. This is CPU-side
-     * preparation only: it does not merge unlike render states or submit draws.
-     * The bounded O(n^2) search avoids hash-map allocation on the render thread.
-     */
+    /** Builds a stable, allocation-free grouping plan by skin metadata. */
     public void buildSkinGroups() {
-        groupCount = 0;
-
-        for (int player = 0; player < size; player++) {
-            SkinTextures skin = skins[player];
-            int group = 0;
-            while (group < groupCount && !skins[groupRepresentatives[group]].equals(skin)) {
-                group++;
-            }
-            if (group == groupCount) {
-                groupRepresentatives[groupCount] = player;
-                groupCount++;
-            }
-            groupOfPlayer[player] = group;
-            groupSizes[group]++;
-        }
-
-        int offset = 0;
-        for (int group = 0; group < groupCount; group++) {
-            groupStarts[group] = offset;
-            groupWriteCursors[group] = offset;
-            offset += groupSizes[group];
-        }
-        for (int player = 0; player < size; player++) {
-            int group = groupOfPlayer[player];
-            groupedPlayerIndices[groupWriteCursors[group]++] = player;
-        }
+        skinGroups.build(skins, size);
     }
 
-    public int skinGroupCount() { return groupCount; }
-    public int skinGroupStart(int group) { checkGroupIndex(group); return groupStarts[group]; }
-    public int skinGroupSize(int group) { checkGroupIndex(group); return groupSizes[group]; }
+    public int skinGroupCount() { return skinGroups.groupCount(); }
+    public int skinGroupStart(int group) { return skinGroups.groupStart(group); }
+    public int skinGroupSize(int group) { return skinGroups.groupSize(group); }
     public SkinTextures skinGroupTexture(int group) {
-        checkGroupIndex(group);
-        return skins[groupRepresentatives[group]];
+        return skins[skinGroups.representativeIndex(group)];
     }
     public int skinGroupPlayerIndex(int group, int offset) {
-        checkGroupIndex(group);
-        if (offset < 0 || offset >= groupSizes[group]) {
-            throw new IndexOutOfBoundsException("skin group offset " + offset + " of " + groupSizes[group]);
-        }
-        return groupedPlayerIndices[groupStarts[group] + offset];
-    }
-
-    private void checkGroupIndex(int group) {
-        if (group < 0 || group >= groupCount) {
-            throw new IndexOutOfBoundsException("skin group " + group + " of " + groupCount);
-        }
+        return skinGroups.itemIndex(group, offset);
     }
 
     public int size() { return size; }
