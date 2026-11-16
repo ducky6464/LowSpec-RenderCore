@@ -34,7 +34,7 @@ public final class AetherGroupIndex<T> {
         if (count < 0 || count > capacity || count > keys.length) {
             throw new IllegalArgumentException("item count exceeds grouping capacity");
         }
-        groupCount = 0;
+        clear();
         itemCount = count;
 
         for (int item = 0; item < count; item++) {
