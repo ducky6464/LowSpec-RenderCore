@@ -180,3 +180,11 @@ Proposed modules:
 - Uses a caller-owned MatrixStack and reusable fixed-capacity float storage; overflow is bounded and reported instead of writing beyond the buffer.
 - Tests cover cuboid/quad/vertex counts, finite output, matrix translation, capacity overflow, and invalid capacity.
 - This is now a real CPU-side ModelPart geometry extraction primitive, but it is not yet connected to PlayerEntityRenderer or the GPU draw pipeline. The caller must pass the base player model root and preserve vanilla feature layers.
+
+
+### Multi-player CPU geometry arena
+- Added a fixed-capacity contiguous arena that stores multiple players' extracted base-model meshes in one reusable float array.
+- Each player slot records a stable offset, float count, and vertex count for the current frame; gaps are allowed and duplicate/out-of-range slots are rejected.
+- Reuses one bounded ModelPart extractor as scratch storage, then copies successful meshes into the arena. Per-frame reset clears slot metadata without reallocating arrays.
+- Tests cover multi-player packing, per-player offsets, duplicate/out-of-range rejection, total-capacity overflow, and frame reuse.
+- This creates CPU mesh storage for later per-skin GPU upload. It is not yet wired to live PlayerEntityRenderer model instances or a GPU draw pass.
