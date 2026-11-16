@@ -50,7 +50,7 @@ Proposed modules:
    - The profiler is wired into `EntityRenderManager#getAndUpdateRenderState` and `EntityRenderManager#render`; it records player and total counts plus rolling per-frame CPU timings when general diagnostics are enabled.
    - Counters are thread-safe and per-invocation start timestamps are thread-local. These metrics remain CPU-side and do not measure actual GPU execution.
    - Added a RenderDispatcher CPU dispatch timer and a non-blocking GPU timer-query sampler. GPU queries are only started when Minecraft's shared GlTimer is idle; results are polled later and never synchronously waited on. If another system owns the timer or results are pending, Aether skips sampling. The GPU query measures only the RenderDispatcher call scope, not guaranteed total entity GPU cost because later render passes may execute deferred work.
-   - Record player and total entity extraction/enqueue counts, average and p95 CPU time, dispatch CPU time, and GPU-query sample availability. A custom-render fallback counter is deferred until a custom renderer actually exists.
+   - Record player and total entity extraction/enqueue counts, average and p95 CPU time, dispatch CPU time, and GPU-query sample availability. Unit tests cover separate extraction/enqueue/dispatch accounting and the disabled-profiler path. A custom-render fallback counter is deferred until a custom renderer actually exists.
    - Use fixed-size/low-allocation metrics.
 
 4. **Adaptive Entity Visibility (AEV)**
@@ -152,4 +152,5 @@ Proposed modules:
 - The current queue is only an extraction/snapshot stage. It does not generate player mesh vertices, group by skin/material, submit a custom RenderPipeline, or issue a custom GPU draw. Vanilla remains the only active renderer.
 - The `/rendercore aether upload-test` command now schedules a single 72-byte identity-record upload on the render thread. This tests staging-to-GPU-buffer mapping and ring/fence bookkeeping without drawing anything.
 - `/rendercore stats` reports upload self-test results, ring errors, retained memory, staging capacity/overflow, and profiler sample counters.
+- `EntityRenderMetricsTest` verifies extraction, enqueue, dispatch, p95 aggregation, and that disabled profiling returns no start timestamp.
 - Next: implement and test a minimal base-player geometry extraction and custom draw pass using the 1.21.11 RenderPipeline/RenderPass APIs, while leaving unsupported layers on vanilla. Do not claim performance gains until measured on the target Chromebook.
