@@ -180,6 +180,11 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Distance scale: "
                                             + String.format(java.util.Locale.ROOT, "%.0f%%",
                                                     AdaptiveEntityVisibility.getDistanceScale() * 100.0)));
+                            var playerQueue = AetherEngine.playerRenderQueue();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether player snapshots: " + playerQueue.size() + "/" + playerQueue.capacity()
+                                            + " captured this frame | " + playerQueue.overflowCount() + " capacity overflows"
+                                            + " | " + playerQueue.rejectedCount() + " rejected"));
                             var aetherPool = AetherEngine.instanceBufferPool();
                             context.getSource().sendFeedback(Text.literal(
                                     "Aether GPU upload ring: " + aetherPool.successfulUploads() + " uploads"
