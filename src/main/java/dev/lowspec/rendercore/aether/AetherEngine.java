@@ -14,6 +14,7 @@ public final class AetherEngine {
     private static volatile boolean initialized;
     private static volatile String initializationError = "";
     private static final AetherInstanceBatch INSTANCE_BATCH = new AetherInstanceBatch();
+    private static final AetherPlayerRenderQueue PLAYER_RENDER_QUEUE = new AetherPlayerRenderQueue();
     private static final AetherInstanceBufferPool INSTANCE_BUFFER_POOL = new AetherInstanceBufferPool();
     private static volatile GpuBuffer lastUploadedInstanceBuffer;
 
@@ -21,6 +22,7 @@ public final class AetherEngine {
 
     public static void beginFrame() {
         INSTANCE_BATCH.beginFrame();
+        PLAYER_RENDER_QUEUE.beginFrame();
         // This reference is valid only for the frame whose upload completed.
         // Never expose a previous frame's ring slot after it may be recycled.
         lastUploadedInstanceBuffer = null;
@@ -66,6 +68,7 @@ public final class AetherEngine {
     public static boolean isInitialized() { return initialized; }
     public static AetherBackend backend() { return backend; }
     public static AetherInstanceBatch instanceBatch() { return INSTANCE_BATCH; }
+    public static AetherPlayerRenderQueue playerRenderQueue() { return PLAYER_RENDER_QUEUE; }
     public static AetherInstanceBufferPool instanceBufferPool() { return INSTANCE_BUFFER_POOL; }
     public static GpuBuffer lastUploadedInstanceBuffer() { return lastUploadedInstanceBuffer; }
     public static String initializationError() { return initializationError; }
