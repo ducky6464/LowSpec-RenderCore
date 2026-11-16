@@ -7,6 +7,17 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AetherPlayerVertexWriterTest {
     @Test
+    void declaredMinecraftVertexFormatMatchesPackedStrideAndOffsets() {
+        assertEquals(20, AetherPlayerVertexLayout.FORMAT.getVertexSize());
+        assertEquals(0, AetherPlayerVertexLayout.FORMAT.getOffset(
+                com.mojang.blaze3d.vertex.VertexFormatElement.POSITION));
+        assertEquals(12, AetherPlayerVertexLayout.FORMAT.getOffset(
+                com.mojang.blaze3d.vertex.VertexFormatElement.UV0));
+        assertEquals(16, AetherPlayerVertexLayout.FORMAT.getOffset(
+                com.mojang.blaze3d.vertex.VertexFormatElement.NORMAL));
+    }
+
+    @Test
     void writesExpectedCompactVertexLayout() {
         float[] source = {1.25f, -2.5f, 3.75f, 0.5f, 1.0f, -1.0f, 0.0f, 1.0f};
         ByteBuffer target = ByteBuffer.allocate(20);
@@ -48,7 +59,6 @@ class AetherPlayerVertexWriterTest {
         assertFalse(AetherPlayerVertexWriter.write(source, 16, ByteBuffer.allocate(20)));
         source[4] = Float.NaN;
         assertFalse(AetherPlayerVertexWriter.write(source, 8, ByteBuffer.allocate(20)));
-        assertThrows(IllegalArgumentException.class,
-                () -> AetherPlayerVertexWriter.write(source, Integer.MAX_VALUE, ByteBuffer.allocate(20)));
+        assertFalse(AetherPlayerVertexWriter.write(source, Integer.MAX_VALUE, ByteBuffer.allocate(20)));
     }
 }
