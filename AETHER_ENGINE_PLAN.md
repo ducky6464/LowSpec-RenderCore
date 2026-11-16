@@ -236,7 +236,7 @@ Proposed modules:
 
 ### Live world draw bridge and transformed mesh capture
 - Moved posed base-player geometry capture to the base-model queue submission point inside LivingEntityRenderer.render, so the supplied renderer matrix stack still contains the current player transform. Feature-layer submissions remain outside this capture path.
-- Added a WorldRenderEvents.AFTER_ENTITIES drawing-stage bridge. It prepares the frame's skin groups and geometry upload, opens a render pass against Minecraft's main framebuffer color/depth attachments, binds default projection uniforms and per-frame model-view transforms, resolves each skin texture, and submits the planned vertex ranges.
+- Added a WorldRenderEvents.AFTER_ENTITIES drawing-stage bridge. It prepares the frame's skin groups, and only uploads captured geometry when the explicit mirror test is enabled. The pass targets Minecraft's main framebuffer color/depth attachments, binds default projection uniforms and per-frame model-view transforms, resolves each skin texture, and submits the planned vertex ranges.
 - Added /rendercore aether mirror on|off as an explicit visual test switch. It is OFF by default and deliberately leaves vanilla player drawing enabled; it redraws captured base models only to validate the custom shader/texture/depth path. It is not the final replacement renderer and should not be treated as an FPS mode.
 - Added mirror-pass status and success/skip/failure counters to /rendercore stats.
 - Production vanilla/custom handoff, full visual compatibility, shader-reload validation, and target-Chromebook performance testing remain outstanding.
