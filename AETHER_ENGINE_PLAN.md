@@ -220,8 +220,8 @@ Proposed modules:
 
 
 ### Compact GPU player vertex format
-- Added a declared 20-byte vertex layout matching Minecraft's VertexFormat API: float3 position, normalized-short2 UV, normalized-byte3 normal, and one padding byte.
+- Added a declared 24-byte vertex layout matching Minecraft's native VertexFormat API: float3 position, float2 UV, normalized-byte3 normal, and one padding byte.
 - Added a reusable allocation-free writer that converts the extractor's 8-float CPU vertices into the packed layout directly inside the mapped GPU buffer.
-- The GPU geometry ring now uploads 20 bytes per vertex instead of 32 bytes, reducing vertex transfer size by 37.5% while retaining position, UV, and normal data.
+- The GPU geometry ring now uploads 24 bytes per vertex instead of the original 32-byte float layout, reducing vertex transfer size by 25% while retaining native float UV precision and normalized-byte normals.
 - The declared VertexFormat verifies its stride and attribute offsets against the writer's byte layout. Tests cover exact encoded values, clamping, multiple vertices, invalid/non-finite input, insufficient output capacity, and format offsets.
 - This defines the vertex contract needed by the future custom shader/pipeline. Shader compilation, texture binding, RenderPass submission, and actual draw calls remain unfinished.
