@@ -47,6 +47,8 @@ public final class AetherPlayerRenderQueue {
     private final float[] flyingRotation, glidingTicks;
     private final AetherGroupIndex<SkinTextures> skinGroups;
     private int size;
+    private int customBaseModelCandidates;
+    private int vanillaFallbackCandidates;
     private long overflowCount;
     private long rejectedCount;
 
@@ -82,6 +84,8 @@ public final class AetherPlayerRenderQueue {
         Arrays.fill(skins, 0, size, null);
         skinGroups.clear();
         size = 0;
+        customBaseModelCandidates = 0;
+        vanillaFallbackCandidates = 0;
     }
 
     /** Snapshot the base-model inputs. Feature layers remain on vanilla. */
@@ -142,9 +146,20 @@ public final class AetherPlayerRenderQueue {
     /** Builds a stable, allocation-free grouping plan by skin metadata. */
     public void buildSkinGroups() {
         skinGroups.build(skins, size);
+        customBaseModelCandidates = 0;
+        vanillaFallbackCandidates = 0;
+        for (int i = 0; i < size; i++) {
+            if (AetherPlayerRenderEligibility.canUseCustomBaseModel(flags[i])) {
+                customBaseModelCandidates++;
+            } else {
+                vanillaFallbackCandidates++;
+            }
+        }
     }
 
     public int skinGroupCount() { return skinGroups.groupCount(); }
+    public int customBaseModelCandidates() { return customBaseModelCandidates; }
+    public int vanillaFallbackCandidates() { return vanillaFallbackCandidates; }
     public int skinGroupStart(int group) { return skinGroups.groupStart(group); }
     public int skinGroupSize(int group) { return skinGroups.groupSize(group); }
     public SkinTextures skinGroupTexture(int group) {
