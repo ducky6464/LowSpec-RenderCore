@@ -188,3 +188,13 @@ Proposed modules:
 - Reuses one bounded ModelPart extractor as scratch storage, then copies successful meshes into the arena. Per-frame reset clears slot metadata without reallocating arrays.
 - Tests cover multi-player packing, per-player offsets, duplicate/out-of-range rejection, total-capacity overflow, and frame reuse.
 - This creates CPU mesh storage for later per-skin GPU upload. It is not yet wired to live PlayerEntityRenderer model instances or a GPU draw pass.
+
+
+### Live player model capture integration
+- Connected the player-render mixin to the actual LivingEntityRenderer model after its render method has prepared and queued the current pose.
+- The mixin checks that the most recent snapshot belongs to the same player and that the conservative eligibility classifier permits the ordinary base-model route.
+- Eligible player model roots are traversed into a reusable, bounded per-frame geometry arena. The geometry remains in model-local coordinates; the existing player snapshot supplies identity, transforms, skin, and lighting metadata.
+- Geometry capture is render-thread-only, uses a reusable MatrixStack and fixed arrays, and does not cancel or replace Minecraft's vanilla render commands. Unsupported states remain on vanilla.
+- Added /rendercore stats reporting for captured geometry, arena capacity, and overflow/rejection counters.
+- Corrected two geometry-arena test capacities that were smaller than the two test meshes / even smaller than one mesh. The tests now exercise the intended successful packing and total-capacity overflow cases.
+- This closes the live CPU model-capture gap. It does not yet submit a custom GPU draw. A GPU vertex upload path, shader/pipeline compatibility, draw ordering, and safe vanilla/custom handoff remain required before visual testing of a custom renderer.

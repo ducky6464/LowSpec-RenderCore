@@ -21,7 +21,7 @@ class AetherPlayerGeometryArenaTest {
 
     @Test
     void packsMultiplePlayerMeshesIntoOneContiguousArena() {
-        AetherPlayerGeometryArena arena = new AetherPlayerGeometryArena(3, 6, 500);
+        AetherPlayerGeometryArena arena = new AetherPlayerGeometryArena(3, 6, 600);
         assertTrue(arena.capture(0, oneCuboid(), new MatrixStack()));
         MatrixStack translated = new MatrixStack();
         translated.translate(4, 0, 0);
@@ -49,7 +49,7 @@ class AetherPlayerGeometryArenaTest {
 
     @Test
     void boundsTotalArenaCapacityAndCanReuseNextFrame() {
-        AetherPlayerGeometryArena arena = new AetherPlayerGeometryArena(2, 6, 100);
+        AetherPlayerGeometryArena arena = new AetherPlayerGeometryArena(2, 6, 400);
         assertTrue(arena.capture(0, oneCuboid(), new MatrixStack()));
         assertFalse(arena.capture(1, oneCuboid(), new MatrixStack()));
         assertEquals(1, arena.overflowCount());

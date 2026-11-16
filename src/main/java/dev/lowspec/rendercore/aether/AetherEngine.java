@@ -2,6 +2,8 @@ package dev.lowspec.rendercore.aether;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.systems.RenderSystem;
+import net.minecraft.client.model.ModelPart;
+import net.minecraft.client.util.math.MatrixStack;
 import dev.lowspec.rendercore.LowSpecRenderCoreClient;
 import dev.lowspec.rendercore.EntityGpuMetrics;
 
@@ -16,6 +18,9 @@ public final class AetherEngine {
     private static volatile String initializationError = "";
     private static final AetherInstanceBatch INSTANCE_BATCH = new AetherInstanceBatch();
     private static final AetherPlayerRenderQueue PLAYER_RENDER_QUEUE = new AetherPlayerRenderQueue();
+    private static final AetherPlayerGeometryArena PLAYER_GEOMETRY_ARENA =
+            new AetherPlayerGeometryArena(128, 128, 128 * 128 * 48);
+    private static final MatrixStack PLAYER_GEOMETRY_MATRICES = new MatrixStack();
     private static final AetherInstanceBufferPool INSTANCE_BUFFER_POOL = new AetherInstanceBufferPool();
     private static volatile GpuBuffer lastUploadedInstanceBuffer;
     private static volatile boolean uploadSelfTestRequested;
@@ -29,6 +34,7 @@ public final class AetherEngine {
     public static void beginFrame() {
         INSTANCE_BATCH.beginFrame();
         PLAYER_RENDER_QUEUE.beginFrame();
+        PLAYER_GEOMETRY_ARENA.beginFrame();
         // This reference is valid only for the frame whose upload completed.
         // Never expose a previous frame's ring slot after it may be recycled.
         lastUploadedInstanceBuffer = null;
@@ -98,6 +104,12 @@ public final class AetherEngine {
     public static AetherBackend backend() { return backend; }
     public static AetherInstanceBatch instanceBatch() { return INSTANCE_BATCH; }
     public static AetherPlayerRenderQueue playerRenderQueue() { return PLAYER_RENDER_QUEUE; }
+    public static AetherPlayerGeometryArena playerGeometryArena() { return PLAYER_GEOMETRY_ARENA; }
+    /** Captures the posed base model into the bounded frame arena; vanilla rendering is untouched. */
+    public static boolean capturePlayerGeometry(int playerIndex, ModelPart root) {
+        if (!RenderSystem.isOnRenderThread() || root == null) return false;
+        return PLAYER_GEOMETRY_ARENA.captureOnRenderThread(playerIndex, root, PLAYER_GEOMETRY_MATRICES);
+    }
     public static AetherInstanceBufferPool instanceBufferPool() { return INSTANCE_BUFFER_POOL; }
     public static GpuBuffer lastUploadedInstanceBuffer() { return lastUploadedInstanceBuffer; }
     /** Queues a one-record upload smoke test for the next render-thread frame end. */

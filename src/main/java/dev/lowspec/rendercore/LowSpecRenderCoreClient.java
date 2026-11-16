@@ -193,6 +193,14 @@ public final class LowSpecRenderCoreClient implements ClientModInitializer {
                                             + " | Skin groups prepared: " + playerQueue.skinGroupCount()
                                             + " | Custom-base candidates: " + playerQueue.customBaseModelCandidates()
                                             + " | Vanilla fallbacks: " + playerQueue.vanillaFallbackCandidates()));
+                            var playerGeometry = AetherEngine.playerGeometryArena();
+                            context.getSource().sendFeedback(Text.literal(
+                                    "Aether posed player geometry: " + playerGeometry.capturedPlayers()
+                                            + " captured | " + playerGeometry.usedFloats() + "/"
+                                            + playerGeometry.capacityFloats() + " floats used"
+                                            + " | Overflow/rejected: " + playerGeometry.overflowCount()
+                                            + "/" + playerGeometry.rejectedCount()
+                                            + " | CPU capture only; vanilla draw remains active"));
                             var aetherPool = AetherEngine.instanceBufferPool();
                             context.getSource().sendFeedback(Text.literal(
                                     "Aether GPU upload ring: " + aetherPool.successfulUploads() + " uploads"
